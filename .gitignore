@@ -9,6 +9,10 @@ a.out
 *.pyc
 test.png
 
+# build
+bld/
+build/
+
 # Generated during configuration:
 config-tests
 
