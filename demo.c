@@ -100,7 +100,7 @@ make_a_list_of_random_ints_badly(PyObject *self,
     list = PyList_New(0);
 
     for (i = 0; i < count; i++) {
-        item = PyLong_FromLong(random());
+        item = PyLong_FromLong(rand());
         PyList_Append(list, item);
     }
 

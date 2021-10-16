@@ -21,6 +21,8 @@ import os
 import shutil
 from subprocess import Popen, PIPE
 import sys
+import ctypes
+import _ctypes
 import sysconfig
 import tempfile
 import unittest
@@ -34,7 +36,7 @@ def get_module_filename(name):
     # (see PEP 3149):
     SOABI = sysconfig.get_config_var('SOABI')
     if SOABI:
-        return '%s.%s.so' % (name, SOABI)
+        return '%s-%s.dll' % (name, SOABI)
 
     if hasattr(sys, "getobjects"):
         # debug build of Python:
@@ -42,6 +44,7 @@ def get_module_filename(name):
         return '%s_d.so' % name
     else:
         # regular (optimized) build of Python:
+        # return '%s.so' % name
         return '%s.so' % name
 
 class CompilationError(CommandError):
@@ -70,7 +73,7 @@ class BuiltModule:
 
     def compile_src(self, extra_cflags = None):
         self.args = [os.environ.get('CC', 'gcc')]
-        self.args += ['-o', self.modfile]
+        self.args += [self.srcfile]
         self.args +=  ['-I' + sc.get_python_inc(),
                        '-I' + sc.get_python_inc(plat_specific=True)]
 
@@ -84,16 +87,17 @@ class BuiltModule:
         # on some builds of Python, CFLAGS does not contain -fPIC, but it
         # appears to still be necessary:
         self.args += ['-fPIC']
-        self.args += ['-shared'] # not sure why this is necessary
+        self.args += ['-shared', '-L/mingw64/lib', '-lpython3.8', '-lm',  '-lversion','-lshlwapi', '-lm'] # not sure why this is necessary
         if extra_cflags:
             self.args += extra_cflags
-        self.args += [self.srcfile]
+        self.args += ['-o', self.modfile]
         # print(self.args)
 
         env = dict(os.environ)
         env['LC_ALL'] = 'C'
 
         # Invoke the compiler:
+        print(" ".join(self.args))
         self.p = Popen(self.args, env=env, stdout=PIPE, stderr=PIPE)
         self.out, self.err = self.p.communicate()
         if six.PY3:
@@ -156,11 +160,24 @@ example_hello(PyObject *self, PyObject *args)
 
         # Verify that it built:
         sys.path.append(bm.tmpdir)
+        print(bm.tmpdir, "------------------------")
         import simple_compilation
         self.assertEqual(simple_compilation.hello(), 'Hello world!')
         
+        if False:
+            dll_filename = simple_compilation.__file__
+            dll = ctypes.CDLL(dll_filename)
+            if dll_filename.endswith("dll"):
+                _ctypes.FreeLibrary(dll._handle)
+                _ctypes.FreeLibrary(dll._handle)
+            else:
+                _ctypes.dlclose(dll._handle)
+                _ctypes.dlclose(dll._handle)
+        # del sys.modules["simple_compilation"]
+        # del simple_compilation
+        # print "Deleting current version..."
         # Cleanup successful test runs:
-        bm.cleanup()
+        # bm.cleanup()
 
     def test_module_with_type(self):
         # Verify an extension with a type
@@ -202,8 +219,20 @@ struct PyExampleType {
         self.assertEqual(repr(module_with_type.ExampleType()),
                          "example.ExampleType('')")
 
+        if False:
+            dll_filename = module_with_type.__file__
+            dll = ctypes.CDLL(dll_filename)
+            if dll_filename.endswith("dll"):
+                _ctypes.FreeLibrary(dll._handle)
+                _ctypes.FreeLibrary(dll._handle)
+            else:
+                _ctypes.dlclose(dll._handle)
+                _ctypes.dlclose(dll._handle)
+
+        # del sys.modules["module_with_type"]
+        # del module_with_type
         # Cleanup successful test runs:
-        bm.cleanup()
+        # bm.cleanup()
 
     def test_version_parsing(self):
         vi  = PyVersionInfo.from_text("sys.version_info(major=2, minor=7, micro=1, releaselevel='final', serial=0)")

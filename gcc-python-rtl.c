@@ -23,6 +23,9 @@
 #include "gcc-python-compat.h"
 #include "rtl.h"
 #include "gcc-c-api/gcc-rtl.h"
+#define OS_WIN32 1
+#include "util-fmemopen.h"
+#define fmemopen SCFmemopen
 
 #if (GCC_VERSION < 5000)
 PyObject *

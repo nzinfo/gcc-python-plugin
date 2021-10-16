@@ -95,11 +95,18 @@
 #include "gcc-python-wrappers.h"
 #include "gcc-python-compat.h"
 
+#if 1
+#define LOG(msg) \
+    (void)fprintf(stderr, "%s:%i:%s\n", __FILE__, __LINE__, (msg))
+#else
+#define LOG(msg) ((void)0);
+#endif
+
 static void
 force_gcc_gc(void);
 
 /* Debugging, for use by selftest routine */
-static int debug_PyGcc_wrapper = 0;
+static int debug_PyGcc_wrapper = 1;
 
 /*
   This is the overriden tp_new in our metatype: when we create new subtypes,
@@ -114,6 +121,7 @@ PyGcc_wrapper_meta_tp_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     /* Use PyType_Type's tp_new to do most of the work: */
     new_type = (PyGccWrapperTypeObject*)PyType_Type.tp_new(type, args, kwds);
     if (!new_type) {
+        LOG("PyType_Type.tp_new in PyGcc_wrapper_meta_tp_new failure.");
         return NULL;
     }
 

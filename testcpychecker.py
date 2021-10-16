@@ -26,7 +26,7 @@ import six
 from testcpybuilder import BuiltModule, SimpleModule, CompilationError
 from cpybuilder import PyMethodTable, PyMethodDef, METH_VARARGS
 
-PLUGIN_NAME = os.environ.get('PLUGIN_NAME', 'python')
+PLUGIN_NAME = os.environ.get('PLUGIN_NAME', 'pygcc')
 
 def get_gcc_version():
     p = Popen(['./print-gcc-version'],

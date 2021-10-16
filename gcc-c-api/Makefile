@@ -78,7 +78,7 @@ GENERATED_HEADERS:= \
 
 GCCPLUGINS_DIR:= $(shell $(CC) --print-file-name=plugin)
 
-LIBGCC_C_API_SO	:= libgcc-c-api.so
+LIBGCC_C_API_SO	:= libgcc-c-api.dll
 
 CPPFLAGS+= -I$(GCCPLUGINS_DIR)/include -I$(GCCPLUGINS_DIR)/include/c-family -I.
 # Allow user to pick optimization, choose whether warnings are fatal,
@@ -86,11 +86,12 @@ CPPFLAGS+= -I$(GCCPLUGINS_DIR)/include -I$(GCCPLUGINS_DIR)/include/c-family -I.
 CFLAGS?=-O2 -Werror -g
 # Force these settings
 CFLAGS+= -fPIC -fno-strict-aliasing -Wall
+LDFLAGS+= -Wl,--unresolved-symbols=ignore-all
 
 all: $(LIBGCC_C_API_SO)
 
 $(LIBGCC_C_API_SO): $(OBJECT_FILES)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -shared $^ -o $@ $(LIBS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -shared $^ -L/mingw64/lib/gcc/x86_64-w64-mingw32/9.3.0/plugin -lcc1plus.exe  -o $@ $(LIBS)
 
 # This is the standard .c->.o recipe, but it needs to be stated
 # explicitly to support the case that $(srcdir) is not blank.
@@ -105,7 +106,7 @@ clean:
 
 install: $(LIBGCC_C_API_SO)
 	mkdir -p $(DESTDIR)$(GCCPLUGINS_DIR)
-	cp libgcc-c-api.so $(DESTDIR)$(GCCPLUGINS_DIR)
+	cp libgcc-c-api.dll $(DESTDIR)$(GCCPLUGINS_DIR)
 
 # The python interpreter to use:
 PYTHON=python

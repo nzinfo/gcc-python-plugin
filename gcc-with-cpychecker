@@ -33,7 +33,7 @@ abspath = os.path.abspath(os.path.dirname(sys.argv[0]))
 # and similar.
 #
 # When installed, this should be fixed up.
-PLUGIN = os.path.join(abspath, 'python.so')
+PLUGIN = os.path.join(abspath, 'pygcc.dll')
 
 # Similarly, set the location to search for libgcc-c-api.so:
 LD_LIBRARY_PATH = os.path.join(abspath, 'gcc-c-api')
@@ -87,9 +87,13 @@ if 'CC_FOR_CPYCHECKER' in os.environ:
 else:
     gcc = 'gcc'
 
+gcc = 'g++'
+
 args = [gcc,
         ('-fplugin=%s' % PLUGIN),
-        ('-fplugin-arg-python-command=%s' % cmd)]
+        ('-fplugin-arg-pygcc-command=%s' % cmd)]
+#args = [gcc,
+#        ('-fplugin=%s' % PLUGIN)]
 args += other_args # (the args we didn't consume)
 
 # Beware of quoting: if the command is quoted within the Popen call, then
@@ -103,7 +107,8 @@ args += other_args # (the args we didn't consume)
 env = os.environ.copy()
 env['LD_LIBRARY_PATH'] = LD_LIBRARY_PATH
 
-if 0:
+if True:
+    print('LD_LIBRARY_PATH=', LD_LIBRARY_PATH)
     print(' '.join(args))
 p = subprocess.Popen(args, env=env)
 

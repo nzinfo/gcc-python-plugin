@@ -20,6 +20,10 @@
 #include <Python.h>
 #include "gcc-python.h"
 #include "gcc-python-wrappers.h"
+#define OS_WIN32 1
+#include "util-fmemopen.h"
+#define fmemopen SCFmemopen
+
 #if (GCC_VERSION >= 4009)
 /* Needed for placement new */
 #include <new>

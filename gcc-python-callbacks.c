@@ -203,7 +203,7 @@ PyGcc_CallbackFor_PLUGIN_ATTRIBUTES(void *gcc_data, void *user_data)
 {
     PyGILState_STATE gstate;
 
-    //printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
+    printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
 
     gstate = PyGILState_Ensure();
 
@@ -218,7 +218,7 @@ PyGcc_CallbackFor_PLUGIN_PASS_EXECUTION(void *gcc_data, void *user_data)
     PyGILState_STATE gstate;
     struct opt_pass *pass = (struct opt_pass *)gcc_data;
 
-    //printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
+    printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
     assert(pass);
 
     gstate = PyGILState_Ensure();
@@ -306,7 +306,7 @@ PyGcc_RegisterCallback(PyObject *self, PyObject *args, PyObject *kwargs)
         return NULL;
     }
 
-    //printf("%s:%i:PyGcc_RegisterCallback\n", __FILE__, __LINE__);
+    printf("%s:%i:PyGcc_RegisterCallback\n", __FILE__, __LINE__);
 
     closure = PyGcc_Closure_NewForPluginEvent(callback, extraargs, kwargs,
                                                       (enum plugin_event)event);
@@ -316,61 +316,61 @@ PyGcc_RegisterCallback(PyObject *self, PyObject *args, PyObject *kwargs)
 
     switch ((enum plugin_event)event) {
     case PLUGIN_ATTRIBUTES:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_PLUGIN_ATTRIBUTES,
 			  closure);
 	break;
 
     case PLUGIN_PRE_GENERICIZE:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_tree,
 			  closure);
 	break;
 	
     case PLUGIN_PASS_EXECUTION:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_PLUGIN_PASS_EXECUTION,
 			  closure);
 	break;
 
     case PLUGIN_FINISH:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
                           (enum plugin_event)event,
                           PyGcc_CallbackFor_FINISH,
                           closure);
 	break;
 
     case PLUGIN_FINISH_UNIT:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_FINISH_UNIT,
 			  closure);
 	break;
 
     case PLUGIN_FINISH_TYPE:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_tree,
 			  closure);
 	break;
 
     case PLUGIN_GGC_START:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_GGC_START,
 			  closure);
         break;
     case PLUGIN_GGC_MARKING:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_GGC_MARKING,
 			  closure);
         break;
     case PLUGIN_GGC_END:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
 			  PyGcc_CallbackFor_GGC_END,
 			  closure);
@@ -379,7 +379,7 @@ PyGcc_RegisterCallback(PyObject *self, PyObject *args, PyObject *kwargs)
     /* PLUGIN_FINISH_DECL was added in gcc 4.7 onwards: */
 #ifdef GCC_PYTHON_PLUGIN_CONFIG_has_PLUGIN_FINISH_DECL
     case PLUGIN_FINISH_DECL:
-        register_callback("python", // FIXME
+        register_callback("pygcc", // FIXME
 			  (enum plugin_event)event,
                           PyGcc_CallbackFor_tree,
 			  closure);

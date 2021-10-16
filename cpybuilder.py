@@ -406,7 +406,7 @@ class CompilationUnit:
     A single C file
     """
     def __init__(self):
-        self._includes = '#include <Python.h>\n'
+        self._includes = '#define DPy_BUILD_CORE_BUILTIN 1 \n #include <Python.h>\n'
 
         self._prototypes = ''
         

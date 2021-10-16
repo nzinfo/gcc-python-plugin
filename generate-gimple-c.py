@@ -231,7 +231,8 @@ PyGccGimple_get_block(struct PyGccGimple *self, void *closure)
                           tp_str = '(reprfunc)PyGccGimple_str',
                           tp_hash = '(hashfunc)PyGccGimple_hash',
                           tp_richcompare = 'PyGccGimple_richcompare',
-                          tp_flags = 'Py_TPFLAGS_BASETYPE',
+                          # tp_flags = 'Py_TPFLAGS_BASETYPE',
+                          tp_flags = '(Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE)',
                           )
     methods = PyMethodTable('PyGccGimple_methods', [])
     methods.add_method('walk_tree',
@@ -431,6 +432,7 @@ def generate_gimple_subclasses():
                               tp_base = '&PyGccGimple_TypeObj',
                               tp_getset = getsettable.identifier if getsettable else None,
                               tp_repr = tp_repr,
+                              tp_flags = '(Py_TPFLAGS_BASETYPE)',
                               #tp_str = '(reprfunc)PyGccGimple_str',
                               )
         cu.add_defn(pytype.c_defn())

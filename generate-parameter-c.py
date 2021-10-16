@@ -19,11 +19,11 @@ from cpybuilder import *
 from wrapperbuilder import PyGccWrapperTypeObject
 import os, subprocess, sys
 
-if not os.path.exists("./print-gcc-version"):
+if not os.path.exists("./print-gcc-version.exe"):
     sys.stderr.write("Build make target 'print-gcc-version' before running this script.")
     sys.exit(1)
 
-gcc_version = int(subprocess.check_output("./print-gcc-version"))
+gcc_version = int(subprocess.check_output("./print-gcc-version.exe"))
 
 if gcc_version >= 10000:
     print("/* GCC10 has removed params.h; no need for this wrapper. */")

@@ -1,8 +1,11 @@
 *~
 .*.sw[a-z]
+.vscode
 *.o
 *.so
+*.dll
 a.out
+*.exe
 *.pyc
 test.png
 
