@@ -17,4 +17,7 @@ pybind11_add_module(gcc_python_plugin SHARED ${GCC_PYTHON_PLUGIN_SRCS})
 set_target_properties(gcc_python_plugin PROPERTIES PREFIX "")
 target_include_directories(gcc_python_plugin PUBLIC 
     ${GCC_PLUGINS_DIR}/include include/)
-target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3)
+set_target_properties(gcc_python_plugin PROPERTIES LINK_FLAGS " -L${GCC_PLUGINS_DIR}")
+target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3) 
+# -lcc1plus.exe
+target_link_libraries(gcc_python_plugin PRIVATE cc1plus.exe)

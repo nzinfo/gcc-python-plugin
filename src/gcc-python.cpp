@@ -31,7 +31,7 @@
 #include "gcc-c-api/gcc-option.h"
 #endif 
 
-#include <plugin-version.h>
+
 
 #if 1
 #define LOG(msg) \
@@ -43,6 +43,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include <plugin-version.h>
 
 // #define __visible __attribute__((visibility("default")))
 __declspec(dllexport)  int plugin_is_GPL_compatible;

@@ -65,10 +65,8 @@ message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
 
 # check gcc plugin dir
 execute_process(COMMAND ${SHELL_CMD} "${SHELL_CMD_ARGS}" "${CMAKE_C_COMPILER} --print-file-name=plugin"  OUTPUT_VARIABLE GCC_PLUGINS_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
-get_filename_component(GCC_PLUGINS_DIR ${GCC_PLUGINS_DIR} REALPATH)
+# get_filename_component(GCC_PLUGINS_DIR ${GCC_PLUGINS_DIR} REALPATH)
 message(STATUS "GCC_PLUGINS_DIR = ${GCC_PLUGINS_DIR}")
-
-
 
 add_subdirectory(pybind11) # import marco in pybind11
 add_subdirectory(src)
