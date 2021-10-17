@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(gcc_python_plugin)
 
+enable_testing()
 #set(CMAKE_CXX_STANDARD 11)
 #set(GCC_SRC_DIR "/home/sbcd90/Documents/programs/gcc-10/gcc-10.1.0")
 #set(GCC_BUILD_DIR "/home/sbcd90/Documents/programs/gcc-10/gcc-build")
@@ -18,6 +19,18 @@ set_target_properties(gcc_python_plugin PROPERTIES PREFIX "")
 target_include_directories(gcc_python_plugin PUBLIC 
     ${GCC_PLUGINS_DIR}/include include/)
 set_target_properties(gcc_python_plugin PROPERTIES LINK_FLAGS " -L${GCC_PLUGINS_DIR}")
-target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3) 
-# -lcc1plus.exe
 target_link_libraries(gcc_python_plugin PRIVATE cc1plus.exe)
+target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3) 
+
+add_custom_command(
+    COMMAND g++ -fplugin=$<TARGET_FILE:gcc_python_plugin> demo.c
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT  pygcc_run_demo.out
+    # COMMENT "Running CRC32 check..."
+)
+add_custom_target(
+    pygcc ALL
+    DEPENDS pygcc_run_demo.out
+) 
+
+message(STATUS "Targ =")

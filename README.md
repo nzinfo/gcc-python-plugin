@@ -1,4 +1,4 @@
-gcc-pytho-2
+gcc-python-2
 ==========
 
 This is a plugin for GCC, which links against libpython, and (I hope) allows
@@ -19,7 +19,10 @@ The plugin is Free Software, licensed under the GPLv3 (or later).
 ## Note for build on Mingw64
 
 1. 不能直接使用 默认的 cmake ，需要是 mingw-w64-x86_64-cmake
-2. 无法直接使用默认的 make ，需要换用 ninja , 即 mingw-w64-x86_64-ninja
+2. 无法直接使用默认的 make ，需要换用 ninja , mingw-w64-x86_64-ninja
+
+```
 Run cmake from the mingw64 shell, not the msys2 shell (usually C:/msys64/mingw64.exe)
 Make sure you installed mingw-w64-x86_64-cmake, not just cmake or mingw-w64-cmake.
 Make sure you installed mingw-w64-x86_64-ninja, not just ninja or mingw-w64-ninja.
+```
