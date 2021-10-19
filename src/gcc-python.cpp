@@ -18,6 +18,37 @@
 */
 
 #include <Python.h>
+#include <pybind11/embed.h>
+#include <gcc-plugin.h>
+#include <plugin-version.h>
+
+// gcc structure.
+#if 1
+/* Ideally we wouldn't have these includes here: */
+#if (GCC_VERSION >= 6000)
+#include <cp/cp-tree.h> /* for cp_expr */
+#endif
+#include <cp/name-lookup.h> /* for global_namespace */
+#include <tree.h>
+#include <tree-pass.h>
+#include <function.h>
+#include <cgraph.h>
+//#include "opts.h"
+
+/* "maybe_get_identifier" was moved from tree.h to stringpool.h in 4.9 */
+#if (GCC_VERSION >= 4009)
+#include <stringpool.h>
+#endif
+
+/*
+ * Use an unqualified name here and rely on dual search paths to let the
+ * compiler find it.  This deals with c-pragma.h moving to a
+ * subdirectory in newer versions of gcc.
+ */
+// #include "c-pragma.h" /* for parse_in */
+#endif
+
+#include "gcc-python-settings.h"
 #include "gcc-python.h"
 
 #if 0
@@ -31,7 +62,8 @@
 #include "gcc-c-api/gcc-option.h"
 #endif 
 
-
+namespace py = pybind11;
+using namespace py::literals;
 
 #if 1
 #define LOG(msg) \
@@ -40,24 +72,178 @@
 #define LOG(msg) ((void)0);
 #endif
 
-#ifdef __cplusplus
-extern "C" {
+static struct 
+{
+    pybind11::module_ module;
+    PyObject *argument_dict;
+    PyObject *argument_tuple;
+} PyGcc_globals;
+
+// define 
+PYBIND11_EMBEDDED_MODULE(gcc, m) {
+    // `m` is a `py::module_` which is used to bind functions and classes
+    m.def("add", [](int i, int j) {
+        return i + j;
+    });
+
+#define DEFPROP(e) \
+       m.attr(#e) = e;
+
+    //DEFPROP(PLUGIN_START_PARSE_FUNCTION)
+    //PyModule_AddIntMacro(PyGcc_globals.module, PROP_gimple_any);
+    DEFPROP(PROP_gimple_any)
+    DEFPROP(PROP_gimple_lcf)
+    DEFPROP(PROP_gimple_leh)
+    DEFPROP(PROP_cfg)
+
+    DEFPROP(PROP_ssa)
+    DEFPROP(PROP_no_crit_edges)
+    DEFPROP(PROP_rtl)
+    DEFPROP(PROP_gimple_lomp)
+    DEFPROP(PROP_cfglayout)
+    DEFPROP(PROP_gimple_lcx)
+
+    DEFPROP(GCC_VERSION)
+#if (GCC_VERSION >= 4008)
+#else
+    DEFPROP(PROP_referenced_vars)
 #endif
 
-#include <plugin-version.h>
-
-// #define __visible __attribute__((visibility("default")))
-__declspec(dllexport)  int plugin_is_GPL_compatible;
-
-#ifdef __cplusplus
+# undef DEFPROP
+    //m.attr("a") = 1;
 }
+
+
+
+static int
+PyGcc_init_gcc_module(struct plugin_name_args *plugin_info)
+{
+    int i;
+
+    if (!PyGcc_globals.module) {
+        return 0;
+    }
+    
+    for (i=0; i<plugin_info->argc; i++) {
+        struct plugin_argument *arg = &plugin_info->argv[i];
+        //key = PyGccString_FromString(arg->key);
+        if (arg->value) {
+            printf("arg: key=%s, value=%s\n", arg->key, plugin_info->argv[i].value);
+        }else {
+            printf("arg: key=%s \n", arg->key);
+        }
+    }
+
+    return 1;
+}
+
+int
+setup_sys(struct plugin_name_args *plugin_info)
+{
+    /*
+
+     * Sets up "sys.plugin_full_name" as plugin_info->full_name.  This is the
+     path to the plugin (as specified with -fplugin=)
+
+     * Sets up "sys.plugin_base_name" as plugin_info->base_name.  This is the
+     short name, of the plugin (filename without .so suffix)
+
+     * Add the directory containing the plugin to "sys.path", so that it can
+     find modules relative to itself without needing PYTHONPATH to be set up.
+     (sys.path has already been initialized by the call to Py_Initialize)
+
+     * If PLUGIN_PYTHONPATH is defined, add it to "sys.path"
+
+    */
+    int result = 0; /* failure */
+
+#if 0
+
+    PyObject *full_name = NULL;
+    PyObject *base_name = NULL;
+    const char *program =
+      "import sys;\n"
+      "import os;\n"
+      "sys.path.append(os.path.abspath(os.path.dirname(sys.plugin_full_name)))\n";
+
+    /* Setup "sys.plugin_full_name" */
+    full_name = PyGccString_FromString(plugin_info->full_name);
+    if (!full_name) {
+        goto error;
+    }
+    if (-1 == PySys_SetObject((char*)"plugin_full_name", full_name)) {
+        goto error;
+    }
+
+    /* Setup "sys.plugin_base_name" */
+    base_name = PyGccString_FromString(plugin_info->base_name);
+    if (!base_name) {
+        goto error;
+    }
+    if (-1 == PySys_SetObject((char*)"plugin_base_name", base_name)) {
+        goto error;
+    }
+
+    /* Add the plugin's path to sys.path */
+    if (-1 == PyRun_SimpleString(program)) {
+        goto error;
+    }
+
+#ifdef PLUGIN_PYTHONPATH
+    {
+        /*
+           Support having multiple builds of the plugin installed independently
+           of each other, by supporting each having a directory for support
+           files e.g. gccutils, libcpychecker, etc
+
+           We do this by seeing if PLUGIN_PYTHONPATH was defined in the
+           compile, and if so, adding it to sys.path:
+        */
+        const char *program2 =
+            "import sys;\n"
+            "import os;\n"
+            "sys.path.append('" PLUGIN_PYTHONPATH "')\n";
+
+        if (-1 == PyRun_SimpleString(program2)) {
+            goto error;
+        }
+    }
 #endif
 
+    /* Success: */
+    result = 1;
+
+ error:
+    Py_XDECREF(full_name);
+    Py_XDECREF(base_name);
+#endif 
+    result = 1;
+    return result;
+}
+
+// As a gcc-plugin, plugin_is_GPL_compatible has to be defined.
+PLUGIN_API_TYPEDEF int plugin_is_GPL_compatible;
+
+/*
+  Wired up to PLUGIN_FINISH, this callback handles finalization for the plugin:
+*/
+void
+on_plugin_finish(void *gcc_data, void *user_data)
+{
+    /*
+       Clean up the python runtime.
+
+       For python 3, this flushes buffering of sys.stdout and sys.stderr
+    */
+    py::finalize_interpreter();
+}
+
+// gcc plugin required initialize api.
 extern int
 plugin_init (struct plugin_name_args *plugin_info,
              struct plugin_gcc_version *version) __attribute__((nonnull));
 
-__declspec(dllexport)  int
+PLUGIN_API_TYPEDEF  int
 plugin_init (struct plugin_name_args *plugin_info,
              struct plugin_gcc_version *version)
 {
@@ -66,8 +252,6 @@ plugin_init (struct plugin_name_args *plugin_info,
     if (!plugin_default_version_check (version, &gcc_version)) {
         return 1;
     }
-
-#if 0
 
 #if PY_MAJOR_VERSION >= 3
     /*
@@ -80,6 +264,43 @@ plugin_init (struct plugin_name_args *plugin_info,
     */
     Py_UnbufferedStdioFlag = 1;
 #endif
+    fprintf(stderr, "macro define[%d]\n", PLUGIN_START_PARSE_FUNCTION);
+    py::initialize_interpreter(); // start the interpreter and keep it alive
+    // py::scoped_interpreter guard{};  // cann't use scoped_interpreter, the interpreter will be terminated when gcc exit, not the scope exit.
+    /*
+    
+    // use another scope dealing python stuff.
+
+        { // scoped
+            auto hello = py::str("Hello, World!");
+        } // <-- OK, hello is cleaned up properly
+    
+    */
+
+    //PyGcc_globals.module = PyImport_ImportModule("gcc");
+    PyGcc_globals.module = py::module_::import("gcc");
+
+        /* Set up int constants for each of the enum plugin_event values: */
+
+#define DEFEVENT(e) \
+       m.attr(#e) = e;
+
+    //#include "plugin1.def"
+    //DEFEVENT(PLUGIN_EVENT_FIRST_DYNAMIC)
+    PyGcc_globals.module.attr("_PARSE_FUNCTION") = PLUGIN_START_PARSE_FUNCTION;
+# undef DEFEVENT
+
+    PyEval_InitThreads();
+
+     if (!PyGcc_init_gcc_module(plugin_info)) {
+        return 1;
+    }
+
+    if (!setup_sys(plugin_info)) {
+        return 1;
+    }
+
+#if 0
 
     PyImport_AppendInittab("gcc", PyInit_gcc);
 
@@ -145,9 +366,7 @@ plugin_init (struct plugin_name_args *plugin_info,
     autogenerated_variable_add_types(PyGcc_globals.module);
 #if 0
 #endif
-    /* Register at-exit finalization for the plugin: */
-    register_callback(plugin_info->base_name, PLUGIN_FINISH,
-                      on_plugin_finish, NULL);
+    
 
     PyGcc_run_any_command();
     PyGcc_run_any_script();
@@ -168,6 +387,10 @@ plugin_init (struct plugin_name_args *plugin_info,
 #endif /* GCC_PYTHON_TRACE_ALL_EVENTS */
 #endif 
 
+    /* Register at-exit finalization for the plugin: */
+    register_callback(plugin_info->base_name, PLUGIN_FINISH,
+                      on_plugin_finish, NULL);
+
     LOG("init_plugin finished");
 
     return 0;
@@ -180,29 +403,7 @@ plugin_init (struct plugin_name_args *plugin_info,
 
 
 
-#if 1
-/* Ideally we wouldn't have these includes here: */
-#if (GCC_VERSION >= 6000)
-#include "cp/cp-tree.h" /* for cp_expr */
-#endif
-#include "cp/name-lookup.h" /* for global_namespace */
-#include "tree.h"
-#include "function.h"
-#include "cgraph.h"
-//#include "opts.h"
 
-/* "maybe_get_identifier" was moved from tree.h to stringpool.h in 4.9 */
-#if (GCC_VERSION >= 4009)
-#include "stringpool.h"
-#endif
-
-/*
- * Use an unqualified name here and rely on dual search paths to let the
- * compiler find it.  This deals with c-pragma.h moving to a
- * subdirectory in newer versions of gcc.
- */
-#include "c-pragma.h" /* for parse_in */
-#endif
 
 
 
@@ -886,19 +1087,7 @@ setup_sys(struct plugin_name_args *plugin_info)
     return result;
 }
 
-/*
-  Wired up to PLUGIN_FINISH, this callback handles finalization for the plugin:
-*/
-void
-on_plugin_finish(void *gcc_data, void *user_data)
-{
-    /*
-       Clean up the python runtime.
 
-       For python 3, this flushes buffering of sys.stdout and sys.stderr
-    */
-    Py_Finalize();
-}
 
 extern int
 plugin_init (struct plugin_name_args *plugin_info,

@@ -64,7 +64,11 @@ message(STATUS "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
 ]]
 
 # check gcc plugin dir
-execute_process(COMMAND ${SHELL_CMD} "${SHELL_CMD_ARGS}" "${CMAKE_C_COMPILER} --print-file-name=plugin"  OUTPUT_VARIABLE GCC_PLUGINS_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(MSYS)          # support both msys2 and cmd
+    execute_process(COMMAND ${SHELL_CMD} "${SHELL_CMD_ARGS}" "${CMAKE_C_COMPILER} --print-file-name=plugin"  OUTPUT_VARIABLE GCC_PLUGINS_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+else()
+    execute_process(COMMAND ${CMAKE_C_COMPILER} "--print-file-name=plugin"  OUTPUT_VARIABLE GCC_PLUGINS_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 # get_filename_component(GCC_PLUGINS_DIR ${GCC_PLUGINS_DIR} REALPATH)
 message(STATUS "GCC_PLUGINS_DIR = ${GCC_PLUGINS_DIR}")
 

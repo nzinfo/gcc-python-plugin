@@ -1,6 +1,7 @@
 *~
 .*.sw[a-z]
 .vscode
+.idea
 *.o
 *.so
 *.dll
@@ -12,6 +13,7 @@ test.png
 # build
 bld/
 build/
+cmake-build-*
 
 # Generated during configuration:
 config-tests
