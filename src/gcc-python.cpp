@@ -86,11 +86,17 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
         return i + j;
     });
 
+// define event. force cast enum type to int/long.
+#define DEFEVENT(e) \
+       m.attr(#e) = (long)e;
+
+# include "plugin.def"
+# undef DEFEVENT
+
 #define DEFPROP(e) \
        m.attr(#e) = e;
 
-    //DEFPROP(PLUGIN_START_PARSE_FUNCTION)
-    //PyModule_AddIntMacro(PyGcc_globals.module, PROP_gimple_any);
+    // PyModule_AddIntMacro(PyGcc_globals.module, PROP_gimple_any);
     DEFPROP(PROP_gimple_any)
     DEFPROP(PROP_gimple_lcf)
     DEFPROP(PROP_gimple_leh)
@@ -108,9 +114,7 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
 #else
     DEFPROP(PROP_referenced_vars)
 #endif
-
 # undef DEFPROP
-    //m.attr("a") = 1;
 }
 
 
@@ -287,7 +291,7 @@ plugin_init (struct plugin_name_args *plugin_info,
 
     //#include "plugin1.def"
     //DEFEVENT(PLUGIN_EVENT_FIRST_DYNAMIC)
-    PyGcc_globals.module.attr("_PARSE_FUNCTION") = PLUGIN_START_PARSE_FUNCTION;
+    PyGcc_globals.module.attr("_PARSE_FUNCTION") = (int)PLUGIN_START_PARSE_FUNCTION;
 # undef DEFEVENT
 
     PyEval_InitThreads();

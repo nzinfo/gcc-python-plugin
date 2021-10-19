@@ -26,3 +26,8 @@ Run cmake from the mingw64 shell, not the msys2 shell (usually C:/msys64/mingw64
 Make sure you installed mingw-w64-x86_64-cmake, not just cmake or mingw-w64-cmake.
 Make sure you installed mingw-w64-x86_64-ninja, not just ninja or mingw-w64-ninja.
 ```
+
+## Note for build in Clion
+
+1. SET cmake environment variable `MSYSTEM` = 1
+2. SET PYTHON_EXECUTABLE to mingw's python.exe
