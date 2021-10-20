@@ -7,7 +7,7 @@ set( GCC_PYTHON_PLUGIN_SRCS
     gcc-python.cpp
     )
 
-if(MSYS)
+if(WIN32)
     set(LIBCC1 cc1plus.exe)
 else()
     set(LIBCC1 cp1plugin)
@@ -26,9 +26,12 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE ${LIBCC1})
 # target_compile_options(${PLUGIN_NAME} PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3) 
 target_compile_options(${PLUGIN_NAME} PRIVATE -Wall -Wextra -pedantic -g -O3) 
 
-add_test(NAME pygcc_run_demo
-    COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> demo.c -fplugin-arg-pygcc-command=abc
+add_test(NAME pygcc_plugin_arg_1
+    COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=print\('abc'\)"
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     # COMMENT "Running GCC plugin check..."
 )
+set_tests_properties(pygcc_plugin_arg_1 PROPERTIES
+        PASS_REGULAR_EXPRESSION "abc"
+        )
 

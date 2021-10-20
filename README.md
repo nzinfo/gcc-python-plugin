@@ -31,3 +31,8 @@ Make sure you installed mingw-w64-x86_64-ninja, not just ninja or mingw-w64-ninj
 
 1. SET cmake environment variable `MSYSTEM` = 1
 2. SET PYTHON_EXECUTABLE to mingw's python.exe
+
+
+## Note for CTest 
+
+1. 如果 stderr 有输出，则 CTest 会认为测试失败。

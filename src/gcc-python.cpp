@@ -67,7 +67,10 @@ using namespace py::literals;
 
 #if 1
 #define LOG(msg) \
-    (void)fprintf(stderr, "%s:%i:%s\n", __FILE__, __LINE__, (msg))
+    {             \
+        if(std::getenv("PYGCC_DEBUG"))         \
+            (void)fprintf(stderr, "%s:%i:%s\n", __FILE__, __LINE__, (msg)); \
+    }
 #else
 #define LOG(msg) ((void)0);
 #endif
@@ -122,7 +125,7 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
 static int
 PyGcc_process_args(py::module_& m, struct plugin_name_args *plugin_info)
 {
-    int i;
+    int i = 0;
     
     py::dict args_dict;
     py::list args_list;
@@ -151,6 +154,66 @@ PyGcc_process_args(py::module_& m, struct plugin_name_args *plugin_info)
     m.attr("args_list") = args_list;
 
     return 1;
+}
+
+static void PyGcc_run_any_command(py::module_& m)
+{
+    // PyObject* command_obj; /* borrowed ref */
+    int result;
+
+    const py::dict & args_dict = py::reinterpret_steal<py::dict>(m.attr("args"));
+    if (!args_dict.contains("command")) {
+        return;
+    }
+
+    auto command_obj = args_dict["command"];
+    py::str command_s(command_obj); // use the constructor
+
+    if (0) {
+        fprintf(stderr, "Running: %s\n", std::string(command_s).c_str());
+    }
+
+
+    result = PyRun_SimpleString(std::string(command_s).c_str());
+    if (-1 == result) {
+        /* Error running the python command */
+        py::finalize_interpreter();
+        exit(1);
+    }
+}
+
+static void PyGcc_run_any_script(py::module_& m)
+{
+    FILE *fp;
+    int result;
+
+    const py::dict & args_dict = py::reinterpret_steal<py::dict>(m.attr("args"));
+    if (!args_dict.contains("script")) {
+        return;
+    }
+
+    auto script_name_obj = args_dict["script"];
+
+    if (!script_name_obj) {
+        return;
+    }
+
+    py::str script_name_s(script_name_obj);
+    auto script_filename = std::string(script_name_s);
+    fp = fopen(script_filename.c_str(), "r");
+    if (!fp) {
+        fprintf(stderr,
+                "Unable to read python script: %s\n",
+                script_filename.c_str());
+        exit(1);
+    }
+    result = PyRun_SimpleFile(fp, script_filename.c_str());
+    fclose(fp);
+    if (-1 == result) {
+        /* Error running the python script */
+        py::finalize_interpreter();
+        exit(1);
+    }
 }
 
 int
@@ -263,7 +326,7 @@ PLUGIN_API_TYPEDEF  int
 plugin_init (struct plugin_name_args *plugin_info,
              struct plugin_gcc_version *version)
 {
-    LOG("plugin_init started");
+    // LOG("plugin_init started");
 
     if (!plugin_default_version_check (version, &gcc_version)) {
         return 1;
@@ -310,6 +373,12 @@ plugin_init (struct plugin_name_args *plugin_info,
         if (!setup_sys(plugin_info)) {
             return 1;
         }
+
+        // do some typeinfo init here...
+
+        // execute user_script.
+        PyGcc_run_any_command(PyGcc_globals.module);
+        PyGcc_run_any_script(PyGcc_globals.module);
     } 
     // end python scope.
 
