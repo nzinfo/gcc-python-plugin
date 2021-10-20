@@ -120,7 +120,7 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
 
 
 static int
-PyGcc_init_gcc_module(struct plugin_name_args *plugin_info)
+PyGcc_process_args(struct plugin_name_args *plugin_info)
 {
     int i;
 
@@ -268,7 +268,7 @@ plugin_init (struct plugin_name_args *plugin_info,
     */
     Py_UnbufferedStdioFlag = 1;
 #endif
-    fprintf(stderr, "macro define[%d]\n", PLUGIN_START_PARSE_FUNCTION);
+
     py::initialize_interpreter(); // start the interpreter and keep it alive
     // py::scoped_interpreter guard{};  // cann't use scoped_interpreter, the interpreter will be terminated when gcc exit, not the scope exit.
     /*
@@ -281,28 +281,25 @@ plugin_init (struct plugin_name_args *plugin_info,
     
     */
 
-    //PyGcc_globals.module = PyImport_ImportModule("gcc");
-    PyGcc_globals.module = py::module_::import("gcc");
+    // Ref: https://stackoverflow.com/questions/15470367/pyeval-initthreads-in-python-3-how-when-to-call-it-the-saga-continues-ad-naus
+    // PyEval_InitThreads();
+
+    // start python scope.
+    {
+        //PyGcc_globals.module = PyImport_ImportModule("gcc");
+        PyGcc_globals.module = py::module_::import("gcc");
 
         /* Set up int constants for each of the enum plugin_event values: */
 
-#define DEFEVENT(e) \
-       m.attr(#e) = e;
+        if (!PyGcc_process_args(plugin_info)) {
+            return 1;
+        }
 
-    //#include "plugin1.def"
-    //DEFEVENT(PLUGIN_EVENT_FIRST_DYNAMIC)
-    PyGcc_globals.module.attr("_PARSE_FUNCTION") = (int)PLUGIN_START_PARSE_FUNCTION;
-# undef DEFEVENT
-
-    PyEval_InitThreads();
-
-     if (!PyGcc_init_gcc_module(plugin_info)) {
-        return 1;
-    }
-
-    if (!setup_sys(plugin_info)) {
-        return 1;
-    }
+        if (!setup_sys(plugin_info)) {
+            return 1;
+        }
+    } 
+    // end python scope.
 
 #if 0
 

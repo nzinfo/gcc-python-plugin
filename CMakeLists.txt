@@ -4,6 +4,8 @@ project(gcc_python_plugin)
 # Global setting: build everything position independent
 set( CMAKE_POSITION_INDEPENDENT_CODE ON )
 
+enable_testing()
+
 # Global setting: Use C++11
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -72,5 +74,7 @@ endif()
 # get_filename_component(GCC_PLUGINS_DIR ${GCC_PLUGINS_DIR} REALPATH)
 message(STATUS "GCC_PLUGINS_DIR = ${GCC_PLUGINS_DIR}")
 
+# force pybin11_newpython mode is on .
+set(PYBIND11_FINDPYTHON 1)
 add_subdirectory(pybind11) # import marco in pybind11
 add_subdirectory(src)

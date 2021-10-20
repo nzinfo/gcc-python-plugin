@@ -1,12 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(gcc_python_plugin)
 
-enable_testing()
-set(CMAKE_CXX_STANDARD 17)
-#set(GCC_SRC_DIR "/home/sbcd90/Documents/programs/gcc-10/gcc-10.1.0")
-#set(GCC_BUILD_DIR "/home/sbcd90/Documents/programs/gcc-10/gcc-build")
-#set(GCC_PLUGIN_DIR "/home/sbcd90/Documents/programs/gcc-10/gcc-install/lib/gcc/x86_64-pc-linux-gnu/10.1.0/plugin")
-#set(GCC_LIB_CPP "/home/sbcd90/Documents/programs/gcc-10/gcc-10.1.0/libcpp")
+set(PLUGIN_NAME pygcc)
 
 set( GCC_PYTHON_PLUGIN_SRCS
     gcc-python.cpp
@@ -19,27 +14,21 @@ else()
 endif()
 
 # get_filename_component(PYTHON_INCLUDE_DIR ${PYTHON_INCLUDE_DIR} REALPATH)
-pybind11_add_module(gcc_python_plugin SHARED ${GCC_PYTHON_PLUGIN_SRCS})
+pybind11_add_module(${PLUGIN_NAME} SHARED  ${GCC_PYTHON_PLUGIN_SRCS} WITHOUT_SOABI)
 
-set_target_properties(gcc_python_plugin PROPERTIES PREFIX "")
-target_include_directories(gcc_python_plugin PUBLIC 
+set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
+target_include_directories(${PLUGIN_NAME} PUBLIC 
     ${GCC_PLUGINS_DIR}/include ${CMAKE_SOURCE_DIR}/pybind11/include )
-set_target_properties(gcc_python_plugin PROPERTIES LINK_FLAGS " -L${GCC_PLUGINS_DIR}")
-target_link_libraries(gcc_python_plugin PUBLIC pybind11::headers pybind11::embed)
-target_link_libraries(gcc_python_plugin PRIVATE ${LIBCC1})
+set_target_properties(${PLUGIN_NAME} PROPERTIES LINK_FLAGS " -L${GCC_PLUGINS_DIR}")
+target_link_libraries(${PLUGIN_NAME} PUBLIC pybind11::headers pybind11::embed)
+target_link_libraries(${PLUGIN_NAME} PRIVATE ${LIBCC1})
 # pybind11 require frtti, but gcc might require fno-rtti....
-# target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3) 
-target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -g -O3) 
+# target_compile_options(${PLUGIN_NAME} PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3) 
+target_compile_options(${PLUGIN_NAME} PRIVATE -Wall -Wextra -pedantic -g -O3) 
 
-add_custom_command(
-    COMMAND g++ -fplugin=$<TARGET_FILE:gcc_python_plugin> demo.c
+add_test(NAME pygcc_run_demo
+    COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> demo.c -fplugin-arg-pygcc-command=abc
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    OUTPUT  pygcc_run_demo.out
     # COMMENT "Running GCC plugin check..."
 )
-add_custom_target(
-    pygcc ALL
-    DEPENDS pygcc_run_demo.out
-) 
 
-message(STATUS "Targ =")
