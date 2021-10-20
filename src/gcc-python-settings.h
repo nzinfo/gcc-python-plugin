@@ -12,7 +12,7 @@
 #else
 	// on unix/linux variants
 	#define PLUGIN_API __attribute__((visibility("default")))
-	#define PLUGIN_API_TYPEDEF
+	#define PLUGIN_API_TYPEDEF __attribute__((visibility("default")))
 #endif // end if MINGW 
 
 #endif

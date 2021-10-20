@@ -12,6 +12,12 @@ set( GCC_PYTHON_PLUGIN_SRCS
     gcc-python.cpp
     )
 
+if(MSYS)
+    set(LIBCC1 cc1plus.exe)
+else()
+    set(LIBCC1 cp1plugin)
+endif()
+
 # get_filename_component(PYTHON_INCLUDE_DIR ${PYTHON_INCLUDE_DIR} REALPATH)
 pybind11_add_module(gcc_python_plugin SHARED ${GCC_PYTHON_PLUGIN_SRCS})
 
@@ -19,7 +25,8 @@ set_target_properties(gcc_python_plugin PROPERTIES PREFIX "")
 target_include_directories(gcc_python_plugin PUBLIC 
     ${GCC_PLUGINS_DIR}/include ${CMAKE_SOURCE_DIR}/pybind11/include )
 set_target_properties(gcc_python_plugin PROPERTIES LINK_FLAGS " -L${GCC_PLUGINS_DIR}")
-target_link_libraries(gcc_python_plugin PRIVATE cc1plus.exe)
+target_link_libraries(gcc_python_plugin PUBLIC pybind11::headers pybind11::embed)
+target_link_libraries(gcc_python_plugin PRIVATE ${LIBCC1})
 # pybind11 require frtti, but gcc might require fno-rtti....
 # target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -fno-rtti -g -O3) 
 target_compile_options(gcc_python_plugin PRIVATE -Wall -Wextra -pedantic -g -O3) 
