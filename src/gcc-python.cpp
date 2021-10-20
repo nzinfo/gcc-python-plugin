@@ -156,7 +156,7 @@ PyGcc_process_args(py::module_& m, struct plugin_name_args *plugin_info)
     return 1;
 }
 
-static void PyGcc_run_any_command(py::module_& m)
+static void PyGcc_run_any_command(const py::module_& m)
 {
     // PyObject* command_obj; /* borrowed ref */
     int result;
@@ -182,7 +182,7 @@ static void PyGcc_run_any_command(py::module_& m)
     }
 }
 
-static void PyGcc_run_any_script(py::module_& m)
+static void PyGcc_run_any_script(const py::module_& m)
 {
     FILE *fp;
     int result;
@@ -234,70 +234,18 @@ setup_sys(struct plugin_name_args *plugin_info)
      * If PLUGIN_PYTHONPATH is defined, add it to "sys.path"
 
     */
-    int result = 0; /* failure */
 
-#if 0
-
-    PyObject *full_name = NULL;
-    PyObject *base_name = NULL;
     const char *program =
-      "import sys;\n"
-      "import os;\n"
-      "sys.path.append(os.path.abspath(os.path.dirname(sys.plugin_full_name)))\n";
-
-    /* Setup "sys.plugin_full_name" */
-    full_name = PyGccString_FromString(plugin_info->full_name);
-    if (!full_name) {
-        goto error;
-    }
-    if (-1 == PySys_SetObject((char*)"plugin_full_name", full_name)) {
-        goto error;
-    }
-
-    /* Setup "sys.plugin_base_name" */
-    base_name = PyGccString_FromString(plugin_info->base_name);
-    if (!base_name) {
-        goto error;
-    }
-    if (-1 == PySys_SetObject((char*)"plugin_base_name", base_name)) {
-        goto error;
-    }
-
-    /* Add the plugin's path to sys.path */
-    if (-1 == PyRun_SimpleString(program)) {
-        goto error;
-    }
-
-#ifdef PLUGIN_PYTHONPATH
-    {
-        /*
-           Support having multiple builds of the plugin installed independently
-           of each other, by supporting each having a directory for support
-           files e.g. gccutils, libcpychecker, etc
-
-           We do this by seeing if PLUGIN_PYTHONPATH was defined in the
-           compile, and if so, adding it to sys.path:
-        */
-        const char *program2 =
             "import sys;\n"
             "import os;\n"
-            "sys.path.append('" PLUGIN_PYTHONPATH "')\n";
+            "sys.path.append(os.path.abspath(os.path.dirname(sys.plugin_full_name)))\n";
 
-        if (-1 == PyRun_SimpleString(program2)) {
-            goto error;
-        }
-    }
-#endif
+    py::module_ sys = py::module_::import("sys");
+    sys.attr("plugin_full_name") = py::reinterpret_steal<py::object>(PYBIND11_FROM_STRING(plugin_info->full_name));
+    sys.attr("plugin_base_name") = py::reinterpret_steal<py::object>(PYBIND11_FROM_STRING(plugin_info->base_name));
 
-    /* Success: */
-    result = 1;
-
- error:
-    Py_XDECREF(full_name);
-    Py_XDECREF(base_name);
-#endif 
-    result = 1;
-    return result;
+    // extend sys.path.
+    return PyRun_SimpleString(program);
 }
 
 // As a gcc-plugin, plugin_is_GPL_compatible has to be defined.
@@ -370,7 +318,7 @@ plugin_init (struct plugin_name_args *plugin_info,
             return 1;
         }
 
-        if (!setup_sys(plugin_info)) {
+        if (-1 == setup_sys(plugin_info)) {
             return 1;
         }
 

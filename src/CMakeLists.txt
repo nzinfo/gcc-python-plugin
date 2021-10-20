@@ -35,3 +35,12 @@ set_tests_properties(pygcc_plugin_arg_1 PROPERTIES
         PASS_REGULAR_EXPRESSION "abc"
         )
 
+# 检查 sys.plugin_full_name 是否设置正确
+add_test(NAME pygcc_plugin_arg_2
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import sys; print\(sys.plugin_full_name\)"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_arg_2 PROPERTIES
+        PASS_REGULAR_EXPRESSION $<TARGET_FILE:${PLUGIN_NAME}>
+        )
