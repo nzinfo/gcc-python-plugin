@@ -60,27 +60,60 @@
 #include "gcc-c-api/gcc-declaration.h"
 #include "gcc-c-api/gcc-diagnostics.h"
 #include "gcc-c-api/gcc-option.h"
-#endif 
+#endif
 
 namespace py = pybind11;
 using namespace py::literals;
 
+static struct
+{
+    py::module_ module;
+    // PyObject *argument_dict;
+    // PyObject *argument_tuple;
+} PyGcc_globals;
+
+static bool g_FlagPyGcc_Debug;   // 调试信息开关
+
+#define GCC_PYTHON_TRACE_ALL_EVENTS 1
+
+/* trace events functions */
+#if GCC_PYTHON_TRACE_ALL_EVENTS
+static const char* event_name[] = {
+#define DEFEVENT(NAME) \
+  #NAME,
+# include "plugin.def"
+# undef DEFEVENT
+};
+
+static void
+trace_callback(enum plugin_event event, void *gcc_data, void *user_data)
+{
+    fprintf(stderr,
+	    "%s:%i:trace_callback(%s, %p, %p)\n",
+	    __FILE__, __LINE__, event_name[event], gcc_data, user_data);
+    fprintf(stderr, "  cfun: %p\n", (void*)cfun);
+}
+
+#define DEFEVENT(NAME) \
+static void trace_callback_for_##NAME(void *gcc_data, void *user_data) \
+{ \
+     if(g_FlagPyGcc_Debug)                                             \
+        trace_callback(NAME, gcc_data, user_data);                     \
+}
+# include "plugin.def"
+# undef DEFEVENT
+#endif /* GCC_PYTHON_TRACE_ALL_EVENTS */
+
 #if 1
 #define LOG(msg) \
     {             \
-        if(std::getenv("PYGCC_DEBUG"))         \
+        if(g_FlagPyGcc_Debug)         \
             (void)fprintf(stderr, "%s:%i:%s\n", __FILE__, __LINE__, (msg)); \
     }
 #else
 #define LOG(msg) ((void)0);
 #endif
 
-static struct 
-{
-    py::module_ module;
-    PyObject *argument_dict;
-    PyObject *argument_tuple;
-} PyGcc_globals;
 
 // define 
 PYBIND11_EMBEDDED_MODULE(gcc, m) {
@@ -274,7 +307,12 @@ PLUGIN_API_TYPEDEF  int
 plugin_init (struct plugin_name_args *plugin_info,
              struct plugin_gcc_version *version)
 {
-    // LOG("plugin_init started");
+    // check debug flag
+    g_FlagPyGcc_Debug = false;
+    if(std::getenv("PYGCC_DEBUG"))
+        g_FlagPyGcc_Debug = true;
+
+    LOG("plugin_init started");
 
     if (!plugin_default_version_check (version, &gcc_version)) {
         return 1;
@@ -329,28 +367,31 @@ plugin_init (struct plugin_name_args *plugin_info,
         PyGcc_run_any_script(PyGcc_globals.module);
     } 
     // end python scope.
+    {
+#if GCC_VERSION < 6000
+        auto GGC_ROOTS = PLUGIN_REGISTER_GGC_CACHES;
+#else
+        auto GGC_ROOTS = PLUGIN_REGISTER_GGC_ROOTS;
+#endif
+
+#if GCC_PYTHON_TRACE_ALL_EVENTS
+#define DEFEVENT(NAME) \
+    if (NAME != PLUGIN_PASS_MANAGER_SETUP &&         \
+        NAME != PLUGIN_INFO &&                       \
+        NAME != GGC_ROOTS) {        \
+    register_callback(plugin_info->base_name, NAME,  \
+		      trace_callback_for_##NAME, NULL); \
+    }
+# include "plugin.def"
+# undef DEFEVENT
+#endif /* GCC_PYTHON_TRACE_ALL_EVENTS */
+
+    }
+
+
+
 
 #if 0
-
-    PyImport_AppendInittab("gcc", PyInit_gcc);
-
-    LOG("calling Py_Initialize...");
-
-    Py_Initialize();
-
-    LOG("Py_Initialize finished");
-
-    PyGcc_globals.module = PyImport_ImportModule("gcc");
-
-    PyEval_InitThreads();
-  
-    if (!PyGcc_init_gcc_module(plugin_info)) {
-        return 1;
-    }
-
-    if (!setup_sys(plugin_info)) {
-        return 1;
-    }
 
     /* Init other modules */
     PyGcc_wrapper_init();

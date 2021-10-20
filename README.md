@@ -36,3 +36,4 @@ Make sure you installed mingw-w64-x86_64-ninja, not just ninja or mingw-w64-ninj
 ## Note for CTest 
 
 1. 如果 stderr 有输出，则 CTest 会认为测试失败。
+2. 设置环境变量 PYGCC_DEBUG = 1 （或其他任何值）， 会激活对 stderr 的调试输出
