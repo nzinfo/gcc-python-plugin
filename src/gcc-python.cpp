@@ -74,7 +74,7 @@ using namespace py::literals;
 
 static struct 
 {
-    pybind11::module_ module;
+    py::module_ module;
     PyObject *argument_dict;
     PyObject *argument_tuple;
 } PyGcc_globals;
@@ -120,23 +120,35 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
 
 
 static int
-PyGcc_process_args(struct plugin_name_args *plugin_info)
+PyGcc_process_args(py::module_& m, struct plugin_name_args *plugin_info)
 {
     int i;
-
-    if (!PyGcc_globals.module) {
-        return 0;
-    }
     
+    py::dict args_dict;
+    py::list args_list;
+
     for (i=0; i<plugin_info->argc; i++) {
         struct plugin_argument *arg = &plugin_info->argv[i];
         //key = PyGccString_FromString(arg->key);
+        py::object value;
+        auto key = py::reinterpret_steal<py::object>(PYBIND11_FROM_STRING(arg->key));
         if (arg->value) {
-            printf("arg: key=%s, value=%s\n", arg->key, plugin_info->argv[i].value);
+            // printf("arg: key=%s, value=%s\n", arg->key, plugin_info->argv[i].value);
+            value = py::reinterpret_steal<py::object>(PYBIND11_FROM_STRING(arg->value));
         }else {
-            printf("arg: key=%s \n", arg->key);
+            // printf("arg: key=%s \n", arg->key);
+            value = py::none();
         }
+
+        args_dict[key] = value;
+        
+        py::tuple tup = py::make_tuple(key, value);
+        args_list.append(tup);
     }
+    
+    // bind to module 
+    m.attr("args") = args_dict;
+    m.attr("args_list") = args_list;
 
     return 1;
 }
@@ -291,7 +303,7 @@ plugin_init (struct plugin_name_args *plugin_info,
 
         /* Set up int constants for each of the enum plugin_event values: */
 
-        if (!PyGcc_process_args(plugin_info)) {
+        if (!PyGcc_process_args(PyGcc_globals.module, plugin_info)) {
             return 1;
         }
 
