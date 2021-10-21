@@ -4,7 +4,8 @@ project(gcc_python_plugin)
 set(PLUGIN_NAME pygcc)
 
 set( GCC_PYTHON_PLUGIN_SRCS
-    gcc-python.cpp
+        gcc-python.cpp
+        python-ggc-wrapper.cpp
     )
 
 if(WIN32)
