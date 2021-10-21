@@ -6,6 +6,9 @@
 #include "gcc-python-compat.h"
 #include <ggc.h>
 
+/* Debugging, for use by selftest routine */
+static int debug_PyGcc_wrapper = 1;
+
 static void
 force_gcc_gc(void);
 
@@ -26,14 +29,14 @@ gcc_python_ggc_walker(void *sentinel_base);
  * */
 
 /* Maintain a circular linked list of PyGccWrapper instances: */
-static struct PyGccWrapper sentinel = {
-        PyObject_HEAD_INIT(NULL)
-        &sentinel,
-        &sentinel,
+// all function with modify sentinel must be locked by GIL.
+GCCTraceRoot g_Sentinel = {
+        &g_Sentinel,
+        &g_Sentinel,
 };
 
 static struct ggc_root_tab gcc_python_root_table[] = {
-        { &sentinel, 1, sizeof(struct PyGccWrapper), gcc_python_ggc_walker, NULL },
+        { &g_Sentinel, 1, sizeof(struct GCCTraceRoot), gcc_python_ggc_walker, NULL },
         LAST_GGC_ROOT_TAB
 };
 
@@ -47,14 +50,40 @@ gcc_python_ggc_walker(void * sentinel_base) {
       don't get swept
     */
     // arg will be the address of dummy , use less.
+    struct GCCTraceRoot *iter;
+    assert(sentinel_base);  // the sentinel_base must a pointer to sentinel.
+
+    GCCTraceRoot* sentinel_p = (struct GCCTraceRoot *)sentinel_base;
+
+
+    if (debug_PyGcc_wrapper) {
+        printf("  walking the live PyGccWrapper objects\n");
+    }
+    for (iter = sentinel_p->wr_next; iter != sentinel_p; iter = iter->wr_next) {
+        if (debug_PyGcc_wrapper) {
+            printf("    marking inner object for: ");
+            PyObject_Print((PyObject*)iter, stdout, 0);
+            printf("\n");
+        }
+        // iter will never point to GCCTraceRoot, so it will always point to GCCTraceMarkable's subclass.
+        ((GCCTraceMarkable*)iter)->ggc_marker();
+    }
+    if (debug_PyGcc_wrapper) {
+        printf("  finished walking the live PyGccWrapper objects\n");
+    }
+
 }
 
 void
 PyGcc_wrapper_init(void)
 {
     /* Register our GC root-walking callback: */
-    ggc_register_root_tab(gcc_python_root_table);
-
+    // ggc_register_root_tab(gcc_python_root_table);
+    // use register_callback are both ok.
+    register_callback(PLUGIN_NAME,
+                      PLUGIN_REGISTER_GGC_ROOTS,
+                      NULL,
+                      gcc_python_root_table);
     //PyType_Ready(&PyGccWrapperMeta_TypeObj);
 }
 

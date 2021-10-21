@@ -8,34 +8,75 @@
 #define GCC_PYTHON_PLUGIN_GGC_WRAPPER_H
 
 #include <Python.h>
-
+#include <cassert>
+#include "gcc-python-config.h"
 /*
  * 与 GCC 的 GC 集成，避免 PyObject 内部引用的 GCC 数据结构被 GC 掉。
  * */
 
 /*
-  PyObject shared header for wrapping GCC objects, for integration
-  with GCC's garbage collector (so that things we wrap don't get collected
-  from under us)
-*/
-typedef struct PyGccWrapper
-{
-    PyObject_HEAD
+ * 与 之前 gcc-python-plugin 在 Python Object 的 MetaType 上构造 双向链表进行追踪不同，这一版本的 gcc-python-plugin2
+ * 使用 C++ 的 继承关系 构造满足 Gcc GC 约束条件的对象。 GCCTraceRoot<GCC_T>
+ *  当构造时，自动将自身放入 GC 需要 mark 的双向链表中；当析构时，在从双向链表 移除。
+ * */
 
-    /*
-      Keep track of a linked list of all live wrapper objects,
-      so that we can mark the wrapped objects for GCC's garbage
-      collector:
-    */
-    struct PyGccWrapper *wr_prev;
-    struct PyGccWrapper *wr_next;
-} PyGccWrapper;
+// 维护双向链表的基类
+class GCCTraceRoot {
+public:
+    GCCTraceRoot *wr_prev;
+    GCCTraceRoot *wr_next;
+};
 
-/*
-  PyTypeObject subclass for PyGccWrapper, adding a GC-marking callback:
- */
-typedef void (*wrtp_marker) (PyGccWrapper *wrapper);
+// 构造虚函数表
+class GCCTraceMarkable : public GCCTraceRoot {
+public:
+    virtual void ggc_marker() = 0;
+};
 
+extern GCCTraceRoot g_Sentinel;
+
+template<typename GCC_T>
+void ggc_marker(GCC_T obj) {
+    // 推迟到 运行时
+    assert(false && "Needs Implementation.");
+}
+
+// 处理不同 Gcc 内部结构的模板宏, 所有包装 GCC 内部数据结构的对象，都需要从此类型继承。
+template<typename GCC_T>
+class GCCTraceBase : public GCCTraceMarkable {
+public:
+    GCCTraceBase(GCC_T value) : value_(value) {
+        // add this object to tracking list.
+        GCCTraceRoot* sentinel = &g_Sentinel;
+        sentinel->wr_prev->wr_next = this;
+        this->wr_prev = sentinel->wr_prev;
+        this->wr_next = sentinel;
+        sentinel->wr_prev = this;
+    }
+    virtual ~GCCTraceBase() {
+        // remove this from tracking list.
+        GCCTraceRoot* sentinel = &g_Sentinel;
+        if (this->wr_prev) {
+            assert(sentinel->wr_next);
+            assert(sentinel->wr_prev);
+            assert(this->wr_next);
+
+            /* Remove from linked list: */
+            this->wr_prev->wr_next = this->wr_next;
+            this->wr_next->wr_prev = this->wr_prev;
+            this->wr_prev = NULL;
+            this->wr_next = NULL;
+        }
+    }
+
+    void ggc_marker() override {
+        ggc_marker(value_);
+    }
+protected:
+    GCC_T value_;
+};
+
+// end of C++ TraceGC
 
 /* python-ggc-wrapper.cpp */
 void
