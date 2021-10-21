@@ -51,6 +51,8 @@
 #include "gcc-python-settings.h"
 #include "gcc-python.h"
 
+#include "python-ggc-wrapper.h"
+
 #if 0
 #include "gcc-python-closure.h"
 #include "gcc-python-wrappers.h"
@@ -121,6 +123,8 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
     m.def("add", [](int i, int j) {
         return i + j;
     });
+
+    m.def("register_callback", &PyGcc_RegisterCallback);
 
 // define event. force cast enum type to int/long.
 #define DEFEVENT(e) \
@@ -359,6 +363,9 @@ plugin_init (struct plugin_name_args *plugin_info,
             return 1;
         }
 
+        // 初始化 python-ggc 集成的接口。
+        PyGcc_ggc_init();
+
         // do some typeinfo init here...
 
         // execute user_script.
@@ -368,13 +375,14 @@ plugin_init (struct plugin_name_args *plugin_info,
     // end python scope.
 
     {
+#if GCC_PYTHON_TRACE_ALL_EVENTS
+
 #if GCC_VERSION < 6000
-        auto GGC_ROOTS = PLUGIN_REGISTER_GGC_CACHES;
+    auto GGC_ROOTS = PLUGIN_REGISTER_GGC_CACHES;
 #else
-        auto GGC_ROOTS = PLUGIN_REGISTER_GGC_ROOTS;
+    auto GGC_ROOTS = PLUGIN_REGISTER_GGC_ROOTS;
 #endif
 
-#if GCC_PYTHON_TRACE_ALL_EVENTS
 #define DEFEVENT(NAME) \
     if (NAME != PLUGIN_PASS_MANAGER_SETUP &&         \
         NAME != PLUGIN_INFO &&                       \
@@ -382,7 +390,7 @@ plugin_init (struct plugin_name_args *plugin_info,
     register_callback(plugin_info->base_name, NAME,  \
 		      trace_callback_for_##NAME, NULL); \
     }
-# include "plugin.def"
+# include <plugin.def>
 # undef DEFEVENT
 #endif /* GCC_PYTHON_TRACE_ALL_EVENTS */
     }

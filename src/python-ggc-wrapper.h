@@ -8,6 +8,7 @@
 #define GCC_PYTHON_PLUGIN_GGC_WRAPPER_H
 
 #include <Python.h>
+#include <pybind11/embed.h>
 #include <cassert>
 #include "gcc-python-config.h"
 /*
@@ -78,9 +79,11 @@ protected:
 
 // end of C++ TraceGC
 
+namespace py = pybind11;
+
 /* python-ggc-wrapper.cpp */
 void
-PyGcc_wrapper_init(void);
+PyGcc_ggc_init(void);
 
 PyObject *
 PyGcc__force_garbage_collection(PyObject *self, PyObject *args);
@@ -88,5 +91,12 @@ PyGcc__force_garbage_collection(PyObject *self, PyObject *args);
 PyObject *
 PyGcc__gc_selftest(PyObject *self, PyObject *args);
 
+
+/* gcc-python-callbacks.cpp: */
+// int PyGcc_IsWithinEvent(enum plugin_event *out_event);
+
+// 注册 script 提供的回调函数 作为 gcc 的回调 ， 返回 None | Error
+py::object
+PyGcc_RegisterCallback(py::args args, const py::kwargs& kwargs);
 
 #endif //GCC_PYTHON_PLUGIN_GGC_WRAPPER_H

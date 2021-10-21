@@ -75,7 +75,7 @@ gcc_python_ggc_walker(void * sentinel_base) {
 }
 
 void
-PyGcc_wrapper_init(void)
+PyGcc_ggc_init(void)
 {
     /* Register our GC root-walking callback: */
     // ggc_register_root_tab(gcc_python_root_table);

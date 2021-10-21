@@ -6,6 +6,7 @@ set(PLUGIN_NAME pygcc)
 set( GCC_PYTHON_PLUGIN_SRCS
         gcc-python.cpp
         python-ggc-wrapper.cpp
+        gcc-python-closure.cpp
     )
 
 if(WIN32)
