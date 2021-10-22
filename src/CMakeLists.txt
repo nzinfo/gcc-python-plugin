@@ -7,6 +7,7 @@ set( GCC_PYTHON_PLUGIN_SRCS
         gcc-python.cpp
         python-ggc-wrapper.cpp
         gcc-python-closure.cpp
+        gcc-python-callback.cpp
     )
 
 if(WIN32)

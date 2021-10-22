@@ -2,6 +2,8 @@
    Copyright 2011 David Malcolm <dmalcolm@redhat.com>
    Copyright 2011 Red Hat, Inc.
 
+   Copyright 2021 Li Monan <li.monan@gmail.com>
+
    This is free software: you can redistribute it and/or modify it
    under the terms of the GNU General Public License as published by
    the Free Software Foundation, either version 3 of the License, or
@@ -20,11 +22,24 @@
 
 #include <gcc-plugin.h>
 
+struct callback_closure
+{
+    py::function callback_fn;
+    py::args args;
+    const py::kwargs& kwargs;
+    enum plugin_event event;
+    /* or GCC_PYTHON_PLUGIN_BAD_EVENT if not an event */
+};
 
-py::object
-PyGcc_RegisterCallback(py::args args, const py::kwargs& kwargs) {
-    printf("regist cb called.");
-    return py::none();
+struct callback_closure *
+PyGcc_Closure_NewForPluginEvent(py::function callback_fn, py::args args, const py::kwargs& kwargs, enum plugin_event event)
+{
+    return NULL;
+}
+
+struct callback_closure *
+PyGcc_closure_new_generic(py::function callback_fn, py::args args, const py::kwargs& kwargs) {
+    return NULL;
 }
 
 #if 0

@@ -67,12 +67,15 @@
 namespace py = pybind11;
 using namespace py::literals;
 
-static struct
+struct
 {
     py::module_ module;
     // PyObject *argument_dict;
     // PyObject *argument_tuple;
 } PyGcc_globals;
+
+char g_plugin_name_buffer[256]; // 直接使用 plugin_name_args 中的名称未尝不可，但是需要确保 plugin_name_args 不会被释放。偷懒起见，复制一份吧。
+const char * g_plugin_name;
 
 static bool g_FlagPyGcc_Debug;   // 调试信息开关
 
@@ -80,7 +83,7 @@ static bool g_FlagPyGcc_Debug;   // 调试信息开关
 
 /* trace events functions */
 #if GCC_PYTHON_TRACE_ALL_EVENTS
-static const char* event_name[] = {
+const char* event_name[] = {
 #define DEFEVENT(NAME) \
   #NAME,
 # include "plugin.def"
@@ -278,7 +281,12 @@ setup_sys(struct plugin_name_args *plugin_info)
     py::module_ sys = py::module_::import("sys");
     sys.attr("plugin_full_name") = py::reinterpret_steal<py::object>(PYBIND11_FROM_STRING(plugin_info->full_name));
     sys.attr("plugin_base_name") = py::reinterpret_steal<py::object>(PYBIND11_FROM_STRING(plugin_info->base_name));
-
+    // 复制 base_name 到全局变量
+    {
+        g_plugin_name = g_plugin_name_buffer;
+        errno_t st = strcpy_s(g_plugin_name_buffer, sizeof(g_plugin_name_buffer), plugin_info->base_name);
+        assert(st == 0);
+    }
     // extend sys.path.
     return PyRun_SimpleString(program);
 }

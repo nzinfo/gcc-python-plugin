@@ -20,7 +20,7 @@
 #ifndef INCLUDED__GCC_PYTHON_CLOSURE_H
 #define INCLUDED__GCC_PYTHON_CLOSURE_H
 
-struct callback_closure
+struct callback_closure;
 {
     PyObject *callback;
     PyObject *extraargs;

@@ -78,13 +78,16 @@ void
 PyGcc_ggc_init(void)
 {
     /* Register our GC root-walking callback: */
-    // ggc_register_root_tab(gcc_python_root_table);
+    ggc_register_root_tab(gcc_python_root_table);
+
+    /*
     // use register_callback are both ok.
     register_callback(PLUGIN_NAME,
                       PLUGIN_REGISTER_GGC_ROOTS,
                       NULL,
                       gcc_python_root_table);
-    //PyType_Ready(&PyGccWrapperMeta_TypeObj);
+    */
+     //PyType_Ready(&PyGccWrapperMeta_TypeObj);
 }
 
 

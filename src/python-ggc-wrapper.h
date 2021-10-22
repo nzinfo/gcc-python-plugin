@@ -1,8 +1,10 @@
 /*
     TODO: GPL License
-    Copyright 2021 Li Monan <li.monan@gmail.com>
+
     Copyright 2011-2013, 2015, 2017 David Malcolm <dmalcolm@redhat.com>
     Copyright 2011-2013, 2015, 2017 Red Hat, Inc.
+
+    Copyright 2021 Li Monan <li.monan@gmail.com>
 */
 #ifndef GCC_PYTHON_PLUGIN_GGC_WRAPPER_H
 #define GCC_PYTHON_PLUGIN_GGC_WRAPPER_H
@@ -96,7 +98,8 @@ PyGcc__gc_selftest(PyObject *self, PyObject *args);
 // int PyGcc_IsWithinEvent(enum plugin_event *out_event);
 
 // 注册 script 提供的回调函数 作为 gcc 的回调 ， 返回 None | Error
-py::object
-PyGcc_RegisterCallback(py::args args, const py::kwargs& kwargs);
+bool
+PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args args, const py::kwargs& kwargs);
+//PyGcc_RegisterCallback(py::object callback_fn, py::args args, const py::kwargs& kwargs);
 
 #endif //GCC_PYTHON_PLUGIN_GGC_WRAPPER_H
