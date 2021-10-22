@@ -23,6 +23,7 @@
 
 py::object
 PyGcc_RegisterCallback(py::args args, const py::kwargs& kwargs) {
+    printf("regist cb called.");
     return py::none();
 }
 

@@ -46,3 +46,13 @@ add_test(NAME pygcc_plugin_arg_2
 set_tests_properties(pygcc_plugin_arg_2 PROPERTIES
         PASS_REGULAR_EXPRESSION $<TARGET_FILE:${PLUGIN_NAME}>
         )
+
+# 检查 regist callback 是否存在
+add_test(NAME pygcc_plugin_arg_3
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; gcc.register_callback\(gcc.PLUGIN_FINISH, lambda: print\('hello'\)\)"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_arg_3 PROPERTIES
+        PASS_REGULAR_EXPRESSION "hello"
+        )
