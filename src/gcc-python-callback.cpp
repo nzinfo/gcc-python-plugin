@@ -28,28 +28,17 @@ extern const char* event_name[];
 extern const char* g_plugin_name;
 
 static void
-PyGcc_FinishInvokingCallback(int expect_wrapped_data, PyObject *wrapped_gcc_data,
-                             void *user_data)
-{
-    struct callback_closure *closure = (struct callback_closure *)user_data;
-    assert(closure);
-    // gcc_location saved_loc = gcc_get_input_location();
-    // py::function callback_fn = py::reinterpret_borrow<py::function>(closure);
-    // py::object result = callback_fn(std::vector<double>{1,2,3,4,5});
-}
-
-
-static void
 PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data, void *user_data)
 {
-    // PyGILState_STATE gstate;
     py::gil_scoped_acquire acquire;
+
     printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
 
-    // gstate = PyGILState_Ensure();
-
-    PyGcc_FinishInvokingCallback(0, NULL,
+    callback_closure *closure = (callback_closure *)user_data;
+    py::object result = PyGcc_ClosureInvoke(0, py::none(),
                                  user_data);
+    // check result ?
+    clear_plugin_finish_callback_closures(closure);
 }
 
 
@@ -67,7 +56,7 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
     /* Acquire GIL before calling Python code */
     py::gil_scoped_acquire acquire;
 
-    struct callback_closure *closure = PyGcc_Closure_NewForPluginEvent(callback_fn, extra_args, kwargs,
+    callback_closure *closure = PyGcc_Closure_NewForPluginEvent(callback_fn, extra_args, kwargs,
                                               (enum plugin_event)eventEnum);
 
     if (!closure) {
@@ -88,13 +77,6 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
             PyErr_Format(PyExc_ValueError, "event type %i invalid (or not wired up yet)", eventEnum);
             return false;
     }
-    /*
-    struct callback_closure *closure = PyGcc_closure_new_generic(callback_fn, args, kwargs);
-    if (closure) {
-        closure->event = event;
-    }
-    return closure;
-    */
     return true;
 }
 

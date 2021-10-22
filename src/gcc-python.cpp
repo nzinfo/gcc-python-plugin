@@ -52,6 +52,7 @@
 #include "gcc-python.h"
 
 #include "python-ggc-wrapper.h"
+#include "gcc-python-closure.h"
 
 #if 0
 #include "gcc-python-closure.h"
@@ -298,13 +299,15 @@ PLUGIN_API_TYPEDEF int plugin_is_GPL_compatible;
   Wired up to PLUGIN_FINISH, this callback handles finalization for the plugin:
 */
 void
-on_plugin_finish(void *gcc_data, void *user_data)
+on_plugin_finish(void *gcc_data ATTRIBUTE_UNUSED, void *user_data ATTRIBUTE_UNUSED)
 {
     /*
        Clean up the python runtime.
 
        For python 3, this flushes buffering of sys.stdout and sys.stderr
     */
+    clear_callback_closures();
+
     py::finalize_interpreter();
 }
 

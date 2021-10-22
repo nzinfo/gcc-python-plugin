@@ -21,25 +21,120 @@
 #include "python-ggc-wrapper.h"
 
 #include <gcc-plugin.h>
+#include "gcc-python.h"
 
-struct callback_closure
+
+typedef struct callback_closure
 {
+    callback_closure * next_closure_;
     py::function callback_fn;
-    py::args args;
-    const py::kwargs& kwargs;
+    const py::args args;
+    const py::kwargs kwargs;
     enum plugin_event event;
     /* or GCC_PYTHON_PLUGIN_BAD_EVENT if not an event */
+}callback_closure;
+
+// 使用 xxx_sentinel 构造一个环。
+callback_closure g_callback_sentinel = {
+        &g_callback_sentinel,
+        py::none(),
+        py::none(),
+        py::none(),
+        (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT,
 };
+
+callback_closure g_plugin_finish_callback_sentinel = {
+        &g_plugin_finish_callback_sentinel,
+        py::none(),
+        py::none(),
+        py::none(),
+        (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT,
+};
+
+struct callback_closure *
+PyGcc_closure_new_generic(py::function callback_fn, py::args args, const py::kwargs& kwargs)
+{
+    /*
+     *  在 David 版本的 gcc-python-plugin 中，使用 PyMem_New 构造了一个 对 Python 不透明的内存数据块。
+     *
+     *  在这一版本中， 考虑到 callback 一旦注册无法取消。 因此对应的 callback_closure 可以存在于 plugin 的整个生命周期。
+     *      因此，只需要在 plugin 卸载时 清除内存即可（避免 GCC 的编译过程 leaky memory)
+     *  考虑到 PLUGIN_FINISH 事件本身 也可作为 Python 的回调注册，因此当
+     *      注册过 PLUGIN_FINISH 事件时，对应的 callback_closure 应单独处理。
+     * */
+
+    callback_closure *closure = new callback_closure{
+        NULL,
+        callback_fn,
+        args,
+        kwargs,
+        (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT
+    };
+    return closure;
+}
 
 struct callback_closure *
 PyGcc_Closure_NewForPluginEvent(py::function callback_fn, py::args args, const py::kwargs& kwargs, enum plugin_event event)
 {
-    return NULL;
+    struct callback_closure *closure = PyGcc_closure_new_generic(callback_fn, args, kwargs);
+    if (closure) {
+        closure->event = event;
+    }
+    // register callback
+    if(event == PLUGIN_FINISH) {
+      // plugin finished callback.
+        callback_closure * iter = &g_plugin_finish_callback_sentinel;
+        while(iter->next_closure_ != &g_plugin_finish_callback_sentinel)
+            iter = iter->next_closure_;
+        // insert closure
+        closure->next_closure_ = iter->next_closure_; // to &g_plugin_finish_callback_sentinel
+        iter->next_closure_ = closure;
+    } else {
+        // other normal callback.
+        callback_closure * iter = &g_callback_sentinel;
+        while(iter->next_closure_ != &g_callback_sentinel)
+            iter = iter->next_closure_;
+        // insert closure
+        closure->next_closure_ = iter->next_closure_; // to &g_callback_sentinel
+        iter->next_closure_ = closure;
+    }
+    return closure;
 }
 
-struct callback_closure *
-PyGcc_closure_new_generic(py::function callback_fn, py::args args, const py::kwargs& kwargs) {
-    return NULL;
+py::object
+PyGcc_ClosureInvoke(int expect_wrapped_data, py::object  wrapped_gcc_data, void *user_data)
+{
+    callback_closure *closure = (callback_closure *)user_data;
+    assert(closure);
+    // gcc_location saved_loc = gcc_get_input_location();
+
+    py::function callback_fn = py::reinterpret_borrow<py::function>(closure->callback_fn);
+    return callback_fn(closure->args, closure->kwargs);
+}
+
+void clear_callback_closures(){
+    // 清除 除 PLUGIN_FINISH 外 的回调结构。
+    callback_closure * iter = &g_callback_sentinel;
+    while(iter->next_closure_ != &g_callback_sentinel) {
+        callback_closure * obj = iter->next_closure_;
+        // remove obj from the list.
+        iter->next_closure_ = obj->next_closure_;
+        delete obj;
+    }
+}
+
+void clear_plugin_finish_callback_closures(struct callback_closure * closure){
+    assert(closure);
+    assert(closure != &g_callback_sentinel);
+
+    callback_closure * iter = &g_callback_sentinel;
+    while(iter->next_closure_ != &g_callback_sentinel) {
+        if (iter->next_closure_ == closure) {
+            iter->next_closure_ = closure->next_closure_;
+            delete closure;
+        }
+        iter = iter->next_closure_;
+    }
 }
 
 #if 0
