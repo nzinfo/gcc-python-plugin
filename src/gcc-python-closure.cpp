@@ -27,7 +27,7 @@
 typedef struct callback_closure
 {
     py::function callback_fn;
-    py::object args;
+    py::args args;
     const py::kwargs kwargs;
     enum plugin_event event;
     /* or GCC_PYTHON_PLUGIN_BAD_EVENT if not an event */
@@ -131,7 +131,8 @@ PyGcc_ClosureInvoke(int expect_wrapped_data, py::object  wrapped_gcc_data, void 
     // gcc_location saved_loc = gcc_get_input_location();
 
     py::function callback_fn = py::reinterpret_borrow<py::function>(closure->callback_fn);
-    return callback_fn(closure->args, closure->kwargs);
+
+    return callback_fn(*(closure->args), **(closure->kwargs));
 }
 
 void

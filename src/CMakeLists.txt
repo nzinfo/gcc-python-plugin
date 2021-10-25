@@ -57,3 +57,12 @@ add_test(NAME pygcc_plugin_arg_3
 set_tests_properties(pygcc_plugin_arg_3 PROPERTIES
         PASS_REGULAR_EXPRESSION "hello"
         )
+
+add_test(NAME pygcc_plugin_arg_4
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; gcc.register_callback\(gcc.PLUGIN_FINISH, lambda s: print\('hello', s\), 'world'\)"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_arg_4 PROPERTIES
+        PASS_REGULAR_EXPRESSION "hello world"
+        )
