@@ -32,12 +32,14 @@ PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data, void *user_data)
 {
     py::gil_scoped_acquire acquire;
 
-    printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
+    //printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
 
     callback_closure *closure = (callback_closure *)user_data;
+    /*
     py::object result = PyGcc_ClosureInvoke(0, py::none(),
                                  user_data);
-    // check result ?
+    */
+     // check result ?
     clear_plugin_finish_callback_closures(closure);
 }
 
@@ -54,6 +56,7 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
      * */
 
     /* Acquire GIL before calling Python code */
+
     py::gil_scoped_acquire acquire;
 
     callback_closure *closure = PyGcc_Closure_NewForPluginEvent(callback_fn, extra_args, kwargs,
@@ -77,6 +80,7 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
             PyErr_Format(PyExc_ValueError, "event type %i invalid (or not wired up yet)", eventEnum);
             return false;
     }
+
     return true;
 }
 

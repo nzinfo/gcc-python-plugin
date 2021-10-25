@@ -26,32 +26,46 @@
 
 typedef struct callback_closure
 {
-    callback_closure * next_closure_;
     py::function callback_fn;
-    const py::args args;
+    py::object args;
     const py::kwargs kwargs;
     enum plugin_event event;
     /* or GCC_PYTHON_PLUGIN_BAD_EVENT if not an event */
 }callback_closure;
 
+/*
+ * 此处用指针技巧， 将 sizeof(callback_closure) 精确的放在 callback_closure_list 后面
+ * */
+typedef struct callback_closure_list {
+    callback_closure_list * next_closure_;
+    // callback_closure * node;
+    char node_buffer[sizeof(callback_closure)];
+}callback_closure_list;
+
 // 使用 xxx_sentinel 构造一个环。
-callback_closure g_callback_sentinel = {
+
+static callback_closure_list g_callback_sentinel
+{
         &g_callback_sentinel,
-        py::none(),
-        py::none(),
-        py::none(),
-        (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT,
+        {},
 };
 
-callback_closure g_plugin_finish_callback_sentinel = {
+static callback_closure_list g_plugin_finish_callback_sentinel
+{
+        &g_plugin_finish_callback_sentinel,
+        {},
+};
+
+/*
+static callback_closure g_plugin_finish_callback_sentinel = {
         &g_plugin_finish_callback_sentinel,
         py::none(),
         py::none(),
         py::none(),
         (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT,
 };
-
-struct callback_closure *
+*/
+struct callback_closure_list *
 PyGcc_closure_new_generic(py::function callback_fn, py::args args, const py::kwargs& kwargs)
 {
     /*
@@ -62,43 +76,51 @@ PyGcc_closure_new_generic(py::function callback_fn, py::args args, const py::kwa
      *  考虑到 PLUGIN_FINISH 事件本身 也可作为 Python 的回调注册，因此当
      *      注册过 PLUGIN_FINISH 事件时，对应的 callback_closure 应单独处理。
      * */
+    callback_closure_list* closure_list = new callback_closure_list{
+        NULL, // pointer to next_closure in out size.
+        {},
+    };
 
-    callback_closure *closure = new callback_closure{
-        NULL,
+    // in placement new
+    new ((void*)closure_list->node_buffer) callback_closure {
         callback_fn,
         args,
         kwargs,
         (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT
     };
-    return closure;
+    return closure_list;
 }
 
 struct callback_closure *
 PyGcc_Closure_NewForPluginEvent(py::function callback_fn, py::args args, const py::kwargs& kwargs, enum plugin_event event)
 {
-    struct callback_closure *closure = PyGcc_closure_new_generic(callback_fn, args, kwargs);
-    if (closure) {
+    struct callback_closure_list *closure_list = PyGcc_closure_new_generic(callback_fn, args, kwargs);
+
+    if (closure_list) {
+        callback_closure *closure = (callback_closure*)closure_list->node_buffer;
         closure->event = event;
     }
     // register callback
+
     if(event == PLUGIN_FINISH) {
       // plugin finished callback.
-        callback_closure * iter = &g_plugin_finish_callback_sentinel;
+        callback_closure_list * iter = &g_plugin_finish_callback_sentinel;
         while(iter->next_closure_ != &g_plugin_finish_callback_sentinel)
             iter = iter->next_closure_;
         // insert closure
-        closure->next_closure_ = iter->next_closure_; // to &g_plugin_finish_callback_sentinel
-        iter->next_closure_ = closure;
+        closure_list->next_closure_ = iter->next_closure_; // to &g_plugin_finish_callback_sentinel
+        iter->next_closure_ = closure_list;
     } else {
         // other normal callback.
-        callback_closure * iter = &g_callback_sentinel;
+        callback_closure_list * iter = &g_callback_sentinel;
         while(iter->next_closure_ != &g_callback_sentinel)
             iter = iter->next_closure_;
         // insert closure
-        closure->next_closure_ = iter->next_closure_; // to &g_callback_sentinel
-        iter->next_closure_ = closure;
+        closure_list->next_closure_ = iter->next_closure_; // to &g_callback_sentinel
+        iter->next_closure_ = closure_list;
     }
-    return closure;
+
+    return  (callback_closure*)closure_list->node_buffer;
 }
 
 py::object
@@ -113,29 +135,38 @@ PyGcc_ClosureInvoke(int expect_wrapped_data, py::object  wrapped_gcc_data, void 
 }
 
 void clear_callback_closures(){
+
     // 清除 除 PLUGIN_FINISH 外 的回调结构。
-    callback_closure * iter = &g_callback_sentinel;
+    callback_closure_list * iter = &g_callback_sentinel;
     while(iter->next_closure_ != &g_callback_sentinel) {
-        callback_closure * obj = iter->next_closure_;
+        callback_closure_list * obj = iter->next_closure_;
         // remove obj from the list.
         iter->next_closure_ = obj->next_closure_;
-        delete obj;
+        // 不能直接删除，还需要 先 delete 内部的 那个 closure.
+        //delete (callback_closure*)obj->node_buffer;
+        //delete obj;
     }
 }
 
 void clear_plugin_finish_callback_closures(struct callback_closure * closure){
     assert(closure);
-    assert(closure != &g_callback_sentinel);
+    /*
+     * 对于注册 PLUGIN_FINISH 事件的回调，事实上只能被调用且仅调用一次， 因此当回调完后，可以清除自身了。
+     * */
 
-    callback_closure * iter = &g_callback_sentinel;
-    while(iter->next_closure_ != &g_callback_sentinel) {
-        if (iter->next_closure_ == closure) {
-            iter->next_closure_ = closure->next_closure_;
-            delete closure;
+    assert(closure != (callback_closure*)&(g_callback_sentinel.node_buffer));
+
+    callback_closure_list * iter = &g_plugin_finish_callback_sentinel;
+    while(iter->next_closure_ != &g_plugin_finish_callback_sentinel) {
+        if ( closure == (callback_closure*)&(iter->next_closure_->node_buffer)) {
+            // 因为 iter->next_closure_ eq closure,
+            iter->next_closure_ = iter->next_closure_->next_closure_;
+            //delete closure;
         }
         iter = iter->next_closure_;
     }
 }
+
 
 #if 0
 #include "gcc-python-closure.h"

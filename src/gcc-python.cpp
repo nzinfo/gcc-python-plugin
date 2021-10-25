@@ -16,6 +16,7 @@
    along with this program.  If not, see
    <http://www.gnu.org/licenses/>.
 */
+#define _STDC_WANT_LIB_EXT1_ 1
 
 #include <Python.h>
 #include <pybind11/embed.h>
@@ -52,7 +53,6 @@
 #include "gcc-python.h"
 
 #include "python-ggc-wrapper.h"
-#include "gcc-python-closure.h"
 
 #if 0
 #include "gcc-python-closure.h"
@@ -233,7 +233,7 @@ static void PyGcc_run_any_script(const py::module_& m)
 
     auto script_name_obj = args_dict["script"];
 
-    if (!script_name_obj) {
+    if (script_name_obj.is_none()) {
         return;
     }
 
@@ -285,8 +285,9 @@ setup_sys(struct plugin_name_args *plugin_info)
     // 复制 base_name 到全局变量
     {
         g_plugin_name = g_plugin_name_buffer;
-        errno_t st = strcpy_s(g_plugin_name_buffer, sizeof(g_plugin_name_buffer), plugin_info->base_name);
-        assert(st == 0);
+        strncpy(g_plugin_name_buffer, plugin_info->base_name, sizeof(g_plugin_name_buffer)-1);
+        g_plugin_name_buffer[sizeof(g_plugin_name_buffer)-1] = 0;
+        //assert(st == 0);
     }
     // extend sys.path.
     return PyRun_SimpleString(program);
@@ -306,7 +307,7 @@ on_plugin_finish(void *gcc_data ATTRIBUTE_UNUSED, void *user_data ATTRIBUTE_UNUS
 
        For python 3, this flushes buffering of sys.stdout and sys.stderr
     */
-    clear_callback_closures();
+    //clear_callback_closures();
 
     py::finalize_interpreter();
 }

@@ -55,9 +55,10 @@ PyGcc_closure_free(struct callback_closure *closure);
 
 #endif
 
+struct callback_closure_list;
 struct callback_closure;
 
-struct callback_closure *
+struct callback_closure_list *
 PyGcc_closure_new_generic(py::function callback_fn, py::args args, const py::kwargs& kwargs);
 
 struct callback_closure *
@@ -66,8 +67,9 @@ PyGcc_Closure_NewForPluginEvent(py::function callback_fn, py::args args, const p
 py::object
 PyGcc_ClosureInvoke(int expect_wrapped_data, py::object  wrapped_gcc_data, void *user_data);
 
+
 // void generic(py::args args, const py::kwargs& kwargs);
-void clear_callback_closures();
+
 void clear_plugin_finish_callback_closures(struct callback_closure * closure);
 
 /*
