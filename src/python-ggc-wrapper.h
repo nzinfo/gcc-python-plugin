@@ -102,6 +102,10 @@ bool
 PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args args, const py::kwargs& kwargs);
 //PyGcc_RegisterCallback(py::object callback_fn, py::args args, const py::kwargs& kwargs);
 
+// 调用注册在 PLUGIN_FINISH 事件上的回调
+void
+PyGcc_ProcessCallback_PLUGIN_FINISH(void *gcc_data);
+
 /* gcc-python-closure.cpp */
 void clear_callback_closures();
 

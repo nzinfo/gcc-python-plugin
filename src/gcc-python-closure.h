@@ -70,8 +70,6 @@ PyGcc_ClosureInvoke(int expect_wrapped_data, py::object  wrapped_gcc_data, void 
 
 // void generic(py::args args, const py::kwargs& kwargs);
 
-void clear_plugin_finish_callback_closures(struct callback_closure * closure);
-
 /*
   PEP-7
 Local variables:

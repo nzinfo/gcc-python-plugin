@@ -27,8 +27,9 @@
 extern const char* event_name[];
 extern const char* g_plugin_name;
 
+/*
 static void
-PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data, void *user_data)
+PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data ATTRIBUTE_UNUSED, void *user_data)
 {
     py::gil_scoped_acquire acquire;
 
@@ -38,10 +39,11 @@ PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data, void *user_data)
     /*
     py::object result = PyGcc_ClosureInvoke(0, py::none(),
                                  user_data);
-    */
+    * /
      // check result ?
     clear_plugin_finish_callback_closures(closure);
 }
+ */
 
 
 // 将封装好的 callback_closure 注册到回调。
@@ -71,8 +73,11 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
 
     switch ((enum plugin_event)eventEnum) {
         case PLUGIN_FINISH:
-            register_callback(g_plugin_name, (enum plugin_event)eventEnum,
-                              PyGcc_CallbackFor_PLUGIN_FINISH, closure);
+            // PLUGIN_FINISH 较为特殊，因为 系统用于清除所有数据的 回调 也使用同样的事件，且注册时机较 后面注册的同样的事件处理回调早
+            // 因此，此处的对象会泄露到 PythonVM 析构之后，导致 UAF.
+            // 所以，针对 事件类型 PLUGIN_FINISH 并不直接注册到 GCC 系统，而是复用插件主系统注册的那个回调。
+            //register_callback(g_plugin_name, (enum plugin_event)eventEnum,
+            //                  PyGcc_CallbackFor_PLUGIN_FINISH, closure);
             break;
         default:
             // warning: required to check eventEnum < PLUGIN_INCLUDE_FILE

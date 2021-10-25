@@ -134,39 +134,51 @@ PyGcc_ClosureInvoke(int expect_wrapped_data, py::object  wrapped_gcc_data, void 
     return callback_fn(closure->args, closure->kwargs);
 }
 
+void
+PyGcc_ProcessCallback_PLUGIN_FINISH(void *gcc_data ATTRIBUTE_UNUSED)
+{
+    //printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
+    callback_closure_list * iter = &g_plugin_finish_callback_sentinel;
+    while(iter->next_closure_ != &g_plugin_finish_callback_sentinel) {
+        iter = iter->next_closure_;  // move next, the real callback.
+        struct callback_closure * closure = (callback_closure*)&(iter->node_buffer);
+        // 调用
+        {
+            py::object result = PyGcc_ClosureInvoke(0, py::none(),
+                                                    closure);
+            // check result ?
+        }
+    }
+}
+
 void clear_callback_closures(){
 
     // 清除 除 PLUGIN_FINISH 外 的回调结构。
-    callback_closure_list * iter = &g_callback_sentinel;
-    while(iter->next_closure_ != &g_callback_sentinel) {
-        callback_closure_list * obj = iter->next_closure_;
-        // remove obj from the list.
-        iter->next_closure_ = obj->next_closure_;
-        // 不能直接删除，还需要 先 delete 内部的 那个 closure.
-        //delete (callback_closure*)obj->node_buffer;
-        //delete obj;
-    }
-}
-
-void clear_plugin_finish_callback_closures(struct callback_closure * closure){
-    assert(closure);
-    /*
-     * 对于注册 PLUGIN_FINISH 事件的回调，事实上只能被调用且仅调用一次， 因此当回调完后，可以清除自身了。
-     * */
-
-    assert(closure != (callback_closure*)&(g_callback_sentinel.node_buffer));
-
-    callback_closure_list * iter = &g_plugin_finish_callback_sentinel;
-    while(iter->next_closure_ != &g_plugin_finish_callback_sentinel) {
-        if ( closure == (callback_closure*)&(iter->next_closure_->node_buffer)) {
-            // 因为 iter->next_closure_ eq closure,
-            iter->next_closure_ = iter->next_closure_->next_closure_;
-            //delete closure;
+    {
+        callback_closure_list *iter = &g_callback_sentinel;
+        while (iter->next_closure_ != &g_callback_sentinel) {
+            callback_closure_list *obj = iter->next_closure_;
+            // remove obj from the list.
+            iter->next_closure_ = obj->next_closure_;
+            // 不能直接删除，还需要 先 析构 内部的 那个 closure. 注意：只析构，不 delete
+            ((callback_closure *) (obj->node_buffer)) ->~callback_closure();
+            delete obj;
         }
-        iter = iter->next_closure_;
+    }
+
+    // 清除 PLUGIN_FINISH 的回调结构。
+    {
+        callback_closure_list *iter = &g_plugin_finish_callback_sentinel;
+        while (iter->next_closure_ != &g_plugin_finish_callback_sentinel) {
+            callback_closure_list *obj = iter->next_closure_;
+            // remove obj from the list.
+            iter->next_closure_ = obj->next_closure_;
+            // 不能直接删除，还需要 先 析构 内部的 那个 closure. 注意：只析构，不 delete
+            ((callback_closure *) (obj->node_buffer)) ->~callback_closure();
+            delete obj;
+        }
     }
 }
-
 
 #if 0
 #include "gcc-python-closure.h"

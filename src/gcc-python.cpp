@@ -68,12 +68,14 @@
 namespace py = pybind11;
 using namespace py::literals;
 
+/*
 struct
 {
     py::module_ module;
     // PyObject *argument_dict;
     // PyObject *argument_tuple;
 } PyGcc_globals;
+*/
 
 char g_plugin_name_buffer[256]; // 直接使用 plugin_name_args 中的名称未尝不可，但是需要确保 plugin_name_args 不会被释放。偷懒起见，复制一份吧。
 const char * g_plugin_name;
@@ -300,15 +302,19 @@ PLUGIN_API_TYPEDEF int plugin_is_GPL_compatible;
   Wired up to PLUGIN_FINISH, this callback handles finalization for the plugin:
 */
 void
-on_plugin_finish(void *gcc_data ATTRIBUTE_UNUSED, void *user_data ATTRIBUTE_UNUSED)
+on_plugin_finish(void *gcc_data, void *user_data ATTRIBUTE_UNUSED)
 {
     /*
        Clean up the python runtime.
 
        For python 3, this flushes buffering of sys.stdout and sys.stderr
     */
-    //clear_callback_closures();
-
+    {
+        py::gil_scoped_acquire acquire;
+        // call plugin finish callback chain
+        PyGcc_ProcessCallback_PLUGIN_FINISH(gcc_data);
+        clear_callback_closures();
+    }
     py::finalize_interpreter();
 }
 
@@ -359,15 +365,16 @@ plugin_init (struct plugin_name_args *plugin_info,
     // Deprecated function which does nothing.
     // Changed in version 3.7: This function is now called by Py_Initialize(), so you don’t have to call it yourself anymore.
     // PyEval_InitThreads();
-
+    // 教训： 所有的 pybind11:: 名字空间中类型的变量，都只能存在于 py::initialize_interpreter 与 py::finalize_interpreter() 之间
+    //       因此，不能在全局变量中使用 py::module ， PyGcc_globals 被整体移除。
     // start python scope.
     {
         //PyGcc_globals.module = PyImport_ImportModule("gcc");
-        PyGcc_globals.module = py::module_::import("gcc");
+        py::module_ module_gcc = py::module_::import("gcc");
 
         /* Set up int constants for each of the enum plugin_event values: */
 
-        if (0 != PyGcc_process_args(PyGcc_globals.module, plugin_info)) {
+        if (0 != PyGcc_process_args(module_gcc, plugin_info)) {
             return 1;
         }
 
@@ -381,8 +388,8 @@ plugin_init (struct plugin_name_args *plugin_info,
         // do some typeinfo init here...
 
         // execute user_script.
-        PyGcc_run_any_command(PyGcc_globals.module);
-        PyGcc_run_any_script(PyGcc_globals.module);
+        PyGcc_run_any_command(module_gcc);
+        PyGcc_run_any_script(module_gcc);
     } 
     // end python scope.
 
