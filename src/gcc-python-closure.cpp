@@ -62,7 +62,7 @@ static callback_closure g_plugin_finish_callback_sentinel = {
         py::none(),
         py::none(),
         py::none(),
-        (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT,
+        (enum plugin_event)PLUGIN_EVENT_FIRST_DYNAMIC,
 };
 */
 struct callback_closure_list *
@@ -86,7 +86,7 @@ PyGcc_closure_new_generic(py::function callback_fn, py::args args, const py::kwa
         callback_fn,
         args,
         kwargs,
-        (enum plugin_event)GCC_PYTHON_PLUGIN_BAD_EVENT
+        (enum plugin_event)PLUGIN_EVENT_FIRST_DYNAMIC
     };
     return closure_list;
 }

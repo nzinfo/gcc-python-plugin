@@ -66,7 +66,7 @@ PyGcc_pass_manager_init(py::module_& m)
     /*
      * 创建 Pass Manager 类，并将其实例化。
      * */
-    py::class_<PyGccPassManager> pass_manger(m, "PassManger");
+    py::class_<PyGccPassManager> pass_manger(m);
 
     pass_manger
             .def("register_pass",  [](PyGccPassManager& self, PyGccPass& pass, PyGccPassManager::PassPosition pos, int instance_number) {

@@ -319,6 +319,11 @@ on_plugin_finish(void *gcc_data, void *user_data ATTRIBUTE_UNUSED)
         // call plugin finish callback chain
         PyGcc_ProcessCallback_PLUGIN_FINISH(gcc_data);
         clear_callback_closures();
+
+        // clean pass manager
+        PyGcc_pass_manager_cleanup();
+        // clean type registration.
+        PyGcc_TypeCleanup();
     }
     py::finalize_interpreter();
 }

@@ -18,7 +18,7 @@ PyGccPass::getName() const {
 }
 
 int
-PyGcc_PyGccPass_TypeInit(py::module_& m) {
+PyGccPass_TypeInit(py::module_& m) {
 
     py::class_<PyGccPass> gcc_pass (m, "GccPass");
 

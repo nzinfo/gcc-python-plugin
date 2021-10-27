@@ -48,7 +48,8 @@
 #include "gcc-c-api/gcc-cfg.h"
 
 /* GCC doesn't seem to give us an ID for "invalid event", so invent one: */
-#define GCC_PYTHON_PLUGIN_BAD_EVENT (0xffff)
+// #define GCC_PYTHON_PLUGIN_BAD_EVENT (0xffff)
+// USE PLUGIN_EVENT_FIRST_DYNAMIC
 
 /*
   Define some macros to allow us to use cpychecker's custom attributes when

@@ -104,6 +104,6 @@ private:
 
 
 int
-PyGcc_PyGccPass_TypeInit(py::module_& m);
+PyGccPass_TypeInit(py::module_& m);
 
 #endif

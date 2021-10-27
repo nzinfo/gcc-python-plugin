@@ -111,10 +111,33 @@ extern const char* g_plugin_name;
 */
 
 static void
+PyGcc_CallbackFor_PLUGIN_OVERRIDE_GATE(void *gcc_data, void *user_data)
+{
+    /*
+     * 这个函数 给出了一个新问题
+     *  1.  gcc_data 参数作为返回值 ， 这里 使用 py::object result 替代，因为只有一个位置可作为返回值。
+     *  2.  gcc 与 plugin 直接的通信，实际是使用 全局变量通信的，在这个 回调中 是 opt_pass* current_pass
+     *      2.1 不排除其他回调中 也需要全局变量
+     *      2.2 不可能每次读取 current_pass 都包装 Python 对象，需要 某种 通过 内存地址 查询 包装的 python 对象的机制
+     *          2.2.1 并且当被包装的对象析构时，能够及时的删除这个映射...
+     *          - 对于 GCC GC 范围内的对象，可以通过 mark 的过程
+     *          - 对于 opt_pass* 需要特殊处理。
+     * */
+    py::gil_scoped_acquire acquire;
+    auto gate_status = (bool*)gcc_data;
+    //auto * opt = (opt_pass *)gcc_data;
+    py::object result = PyGcc_ClosureInvoke(1, py::cast(*gate_status),
+                                            user_data);
+    if(result.is_none())
+        *gate_status = false;
+    else
+        *gate_status = result.cast<pybind11::bool_>().cast<bool>();
+}
+
+static void
 PyGcc_CallbackFor_PLUGIN_PASS_EXECUTION(void *gcc_data, void *user_data)
 {
-    //  The event data is the included file path,
-    //              as a const char* pointer.
+    //  The event data is a opt_pass
     py::gil_scoped_acquire acquire;
     auto * opt = (opt_pass *)gcc_data;
     py::object result = PyGcc_ClosureInvoke(1, py::cast(PyGccPass(opt)),
@@ -208,6 +231,7 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
             //register_callback(g_plugin_name, ,
             //                  PyGcc_CallbackFor_PLUGIN_FINISH, closure);
             break;
+        REGISTER_EVENT_HANDLER(PLUGIN_OVERRIDE_GATE)
         REGISTER_EVENT_HANDLER_DEFAULT(PLUGIN_ALL_IPA_PASSES_START)
         REGISTER_EVENT_HANDLER(PLUGIN_PASS_EXECUTION)
         REGISTER_EVENT_HANDLER_DEFAULT(PLUGIN_EARLY_GIMPLE_PASSES_START)
