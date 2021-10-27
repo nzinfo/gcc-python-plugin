@@ -9,15 +9,6 @@
 void PyGccCurrentEnvironment::Update(enum plugin_event ev) {
     current_event_ = ev;
     current_fun_ = cfun;
-    /* Current position in real source file.  defaults is UNKNOWN_LOCATION */
-    location_t input_location_;
-    /* The function currently being compiled.  */
-    struct function * current_fun_;
-    /* 插件的概念，当期处理的插件事件 */
-    enum plugin_event current_event_;
-    /* This is used for debugging.  It allows the current pass to printed from anywhere in compilation.
-        The variable current_pass is also used for statistics and plugins.  */
-    opt_pass *current_pass_;
 }
 
 
@@ -38,6 +29,7 @@ PyGccCurrentEnvironment_TypeInit(py::module_& m)
 //            py::return_value_policy::reference_internal);
 
     m.def("current", []() { return PyGccCurrentEnvironment::instance(); }, py::return_value_policy::reference);
+    return 0;
 }
 
 void

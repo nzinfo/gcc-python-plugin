@@ -42,14 +42,14 @@ public:
     void cleanup() {};
 private:
     /* Current position in real source file.  defaults is UNKNOWN_LOCATION */
-    location_t input_location_{};
+    location_t input_location_;
     /* The function currently being compiled.  */
-    struct function * current_fun_{};
+    struct function * current_fun_;
     /* 插件的概念，当期处理的插件事件 */
     enum plugin_event current_event_;
     /* This is used for debugging.  It allows the current pass to printed from anywhere in compilation.
         The variable current_pass is also used for statistics and plugins.  */
-    opt_pass *current_pass_{};
+    opt_pass *current_pass_;
 };
 
 // TODO: update input location for error reporting

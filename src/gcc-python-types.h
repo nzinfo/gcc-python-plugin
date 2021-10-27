@@ -8,8 +8,10 @@
 
 int
 PyGcc_TypeInit(py::module_& m) {
-    int rs = PyGccPass_TypeInit(m);
-    //rs = PyGccCurrentEnvironment_TypeInit(m);
+    int rs = 0;
+    rs = PyGccPass_TypeInit(m);
+    // rs = PyGccPass_TypeInit(m);
+    rs = PyGccCurrentEnvironment_TypeInit(m);
     return rs;
 }
 
