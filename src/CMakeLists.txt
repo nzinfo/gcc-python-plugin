@@ -103,3 +103,12 @@ add_test(NAME pygcc_plugin_pass_register
 set_tests_properties(pygcc_plugin_pass_register PROPERTIES
         PASS_REGULAR_EXPRESSION "register_pass"
         )
+
+add_test(NAME pygcc_plugin_cb_includefile
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-script=${CMAKE_SOURCE_DIR}/tests/test_eventcb_include_file.py"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_cb_includefile PROPERTIES
+        PASS_REGULAR_EXPRESSION "stdio.h"
+        )

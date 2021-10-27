@@ -112,7 +112,7 @@ PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data ATTRIBUTE_UNUSED, void *user_data
     //printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
 
     callback_closure *closure = (callback_closure *)user_data;
-    /*
+    / *
     py::object result = PyGcc_ClosureInvoke(0, py::none(),
                                  user_data);
     * /
@@ -121,6 +121,16 @@ PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data ATTRIBUTE_UNUSED, void *user_data
 }
  */
 
+static void
+PyGcc_CallbackFor_PLUGIN_INCLUDE_FILE(void *gcc_data, void *user_data)
+{
+    //  The event data is the included file path,
+    //              as a const char* pointer.
+    py::gil_scoped_acquire acquire;
+    // callback_closure *closure = (callback_closure *)user_data;
+    py::object result = PyGcc_ClosureInvoke(1, py::str((const char*)gcc_data),
+                                 user_data);
+}
 
 // 将封装好的 callback_closure 注册到回调。
 bool
@@ -146,16 +156,19 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
         PyErr_SetNone(PyExc_MemoryError);
         return false;
     }
-
-    switch ((enum plugin_event)eventEnum) {
+    auto ev_type = (enum plugin_event)eventEnum;
+    switch (ev_type) {
         // TODO: support more event. defined in <plugin.def>
         case PLUGIN_FINISH:
             // The PLUGIN_FINISH event is the last time that plugins can call GCC functions, notably emit diagnostics with warning, error etc.
             // PLUGIN_FINISH 较为特殊，因为 系统用于清除所有数据的 回调 也使用同样的事件，且注册时机较 后面注册的同样的事件处理回调早
             // 因此，此处的对象会泄露到 PythonVM 析构之后，导致 UAF.
             // 所以，针对 事件类型 PLUGIN_FINISH 并不直接注册到 GCC 系统，而是复用插件主系统注册的那个回调。
-            //register_callback(g_plugin_name, (enum plugin_event)eventEnum,
+            //register_callback(g_plugin_name, ,
             //                  PyGcc_CallbackFor_PLUGIN_FINISH, closure);
+            break;
+        case PLUGIN_INCLUDE_FILE:
+            register_callback(g_plugin_name, ev_type, PyGcc_CallbackFor_PLUGIN_INCLUDE_FILE, closure);
             break;
         default:
             // warning: required to check eventEnum < PLUGIN_INCLUDE_FILE
