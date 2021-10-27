@@ -9,6 +9,8 @@ set( GCC_PYTHON_PLUGIN_SRCS
         gcc-python-closure.cpp
         gcc-python-callback.cpp
         gcc-python-passmanager.cpp
+        wrapper/gcc-python-ggc-markers.cpp
+        wrapper/gcc-python-opt_pass.cpp
     )
 
 if(WIN32)
@@ -22,7 +24,7 @@ pybind11_add_module(${PLUGIN_NAME} SHARED  ${GCC_PYTHON_PLUGIN_SRCS} WITHOUT_SOA
 
 set_target_properties(${PLUGIN_NAME} PROPERTIES PREFIX "")
 target_include_directories(${PLUGIN_NAME} PUBLIC 
-    ${GCC_PLUGINS_DIR}/include ${CMAKE_SOURCE_DIR}/pybind11/include )
+    ${GCC_PLUGINS_DIR}/include ${CMAKE_SOURCE_DIR}/pybind11/include ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/src/wrapper )
 set_target_properties(${PLUGIN_NAME} PROPERTIES LINK_FLAGS " -L${GCC_PLUGINS_DIR}")
 target_link_libraries(${PLUGIN_NAME} PUBLIC pybind11::headers pybind11::embed)
 target_link_libraries(${PLUGIN_NAME} PRIVATE ${LIBCC1})
@@ -102,6 +104,15 @@ add_test(NAME pygcc_plugin_pass_register
         )
 set_tests_properties(pygcc_plugin_pass_register PROPERTIES
         PASS_REGULAR_EXPRESSION "register_pass"
+        )
+
+add_test(NAME pygcc_plugin_cb_passexec
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-script=${CMAKE_SOURCE_DIR}/tests/test_eventcb_passexec.py"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_cb_passexec PROPERTIES
+        PASS_REGULAR_EXPRESSION "exec pass: cfg"
         )
 
 add_test(NAME pygcc_plugin_cb_includefile

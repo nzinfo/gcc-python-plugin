@@ -53,6 +53,7 @@
 #include "gcc-python.h"
 
 #include "python-ggc-wrapper.h"
+#include "gcc-python-types.h"
 
 #if 0
 #include "gcc-python-closure.h"
@@ -432,10 +433,12 @@ plugin_init (struct plugin_name_args *plugin_info,
         // 初始化 python-ggc 集成的接口。
         PyGcc_ggc_init();
 
+        // 初始化 callbacks 需要的参数类型的 Python 封装。
+        PyGcc_TypeInit(module_gcc);
+
         // 初始化 pass_manger
         PyGcc_pass_manager_init(module_gcc);
 
-        // do some typeinfo init here...
         /*
         {
             pass_data data;

@@ -19,10 +19,17 @@
    <http://www.gnu.org/licenses/>.
 */
 #include "python-ggc-wrapper.h"
+#include "gcc-python.h"
 
 #include <gcc-plugin.h>
-
 #include "gcc-python-closure.h"
+
+#include <gimple.h>
+#include <tree.h>
+#include <tree-pass.h>
+
+// 用于封装 gcc 对象的类型
+#include "wrapper/gcc-python-pass.h"
 
 extern const char* event_name[];
 extern const char* g_plugin_name;
@@ -103,23 +110,36 @@ extern const char* g_plugin_name;
     to  "Allow plugins to register their own pragmas."
 */
 
-/*
 static void
-PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data ATTRIBUTE_UNUSED, void *user_data)
+PyGcc_CallbackFor_PLUGIN_PASS_EXECUTION(void *gcc_data, void *user_data)
 {
+    //  The event data is the included file path,
+    //              as a const char* pointer.
     py::gil_scoped_acquire acquire;
-
-    //printf("%s:%i:(%p, %p)\n", __FILE__, __LINE__, gcc_data, user_data);
-
-    callback_closure *closure = (callback_closure *)user_data;
-    / *
-    py::object result = PyGcc_ClosureInvoke(0, py::none(),
-                                 user_data);
-    * /
-     // check result ?
-    clear_plugin_finish_callback_closures(closure);
+    auto * opt = (opt_pass *)gcc_data;
+    py::object result = PyGcc_ClosureInvoke(1, py::cast(PyGccPass(opt)),
+                                            user_data);
 }
- */
+
+static void
+PyGcc_CallbackFor_PLUGIN_NEW_PASS(void *gcc_data, void *user_data) {
+    // Called when a pass is first instantiated.
+    //      in add_pass_instance@passes.c , opt_pass *new_pass -> gcc_data
+
+    /*
+     *  When your plugin is loaded, you can inspect the various pass lists to
+     *  determine what passes are available.  However, other plugins might add
+     *  new passes.  Also, future changes to GCC might cause generic passes to
+     *  be added after plugin loading.  When a pass is first added to one of the
+     *  pass lists, the event 'PLUGIN_NEW_PASS' is invoked, with the callback
+     *  parameter 'gcc_data' pointing to the new pass.
+     */
+
+    py::gil_scoped_acquire acquire;
+    auto * opt = (opt_pass *)gcc_data;
+    py::object result = PyGcc_ClosureInvoke(1, py::cast(PyGccPass(opt)),
+                                            user_data);
+}
 
 static void
 PyGcc_CallbackFor_PLUGIN_INCLUDE_FILE(void *gcc_data, void *user_data)
@@ -130,6 +150,20 @@ PyGcc_CallbackFor_PLUGIN_INCLUDE_FILE(void *gcc_data, void *user_data)
     // callback_closure *closure = (callback_closure *)user_data;
     py::object result = PyGcc_ClosureInvoke(1, py::str((const char*)gcc_data),
                                  user_data);
+}
+
+
+static void
+PyGcc_CallbackFor_PLUGIN_DEFAULT_NOTIFICATION(void *gcc_data ATTRIBUTE_UNUSED, void *user_data)
+{
+    /*
+     * 用于 gcc_data 始终为 NULL, 0x0 的事件。
+     * */
+    py::gil_scoped_acquire acquire;
+
+    py::object result = PyGcc_ClosureInvoke(0, py::none(),
+                                            user_data);
+    // TODDO: check result & error status ?
 }
 
 // 将封装好的 callback_closure 注册到回调。
@@ -157,6 +191,13 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
         return false;
     }
     auto ev_type = (enum plugin_event)eventEnum;
+
+#define REGISTER_EVENT_HANDLER(event) \
+    case event: register_callback(g_plugin_name, ev_type, PyGcc_CallbackFor_##event, closure); break;
+
+#define REGISTER_EVENT_HANDLER_DEFAULT(event) \
+    case event: register_callback(g_plugin_name, ev_type, PyGcc_CallbackFor_PLUGIN_DEFAULT_NOTIFICATION, closure); break;
+
     switch (ev_type) {
         // TODO: support more event. defined in <plugin.def>
         case PLUGIN_FINISH:
@@ -167,16 +208,19 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
             //register_callback(g_plugin_name, ,
             //                  PyGcc_CallbackFor_PLUGIN_FINISH, closure);
             break;
-        case PLUGIN_INCLUDE_FILE:
-            register_callback(g_plugin_name, ev_type, PyGcc_CallbackFor_PLUGIN_INCLUDE_FILE, closure);
-            break;
+        REGISTER_EVENT_HANDLER_DEFAULT(PLUGIN_ALL_IPA_PASSES_START)
+        REGISTER_EVENT_HANDLER(PLUGIN_PASS_EXECUTION)
+        REGISTER_EVENT_HANDLER_DEFAULT(PLUGIN_EARLY_GIMPLE_PASSES_START)
+        REGISTER_EVENT_HANDLER_DEFAULT(PLUGIN_EARLY_GIMPLE_PASSES_END)
+        REGISTER_EVENT_HANDLER(PLUGIN_NEW_PASS)
+        REGISTER_EVENT_HANDLER(PLUGIN_INCLUDE_FILE)
         default:
             // warning: required to check eventEnum < PLUGIN_INCLUDE_FILE
             // PyErr_Format(PyExc_ValueError, "event type %s(%i) invalid (or not wired up yet)", event_name[eventEnum], eventEnum);
             PyErr_Format(PyExc_ValueError, "event type %i invalid (or not wired up yet)", eventEnum);
             return false;
     }
-
+#undef REGISTER_EVENT_HANDLER
     return true;
 }
 

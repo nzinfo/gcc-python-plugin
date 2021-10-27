@@ -48,7 +48,7 @@ void ggc_marker(GCC_T) {
 template<typename GCC_T>
 class GCCTraceBase : public GCCTraceMarkable {
 public:
-    GCCTraceBase(GCC_T value) : value_(value) {
+    explicit GCCTraceBase(GCC_T value) : GCCTraceMarkable(), value_(value) {
         // add this object to tracking list.
         GCCTraceRoot* sentinel = &g_Sentinel;
         sentinel->wr_prev->wr_next = this;

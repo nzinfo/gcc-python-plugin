@@ -82,19 +82,28 @@ namespace py = pybind11;
  *          -> get_pass_by_name
  *      3. 在 Python 空间构造 GCC 对应 Pass 的封装
  * */
-#include "../python-ggc-wrapper.h"
+#include "python-ggc-wrapper.h"
 
-template<struct opt_pass*>
-void ggc_marker(struct opt_pass* ) {
-    // 推迟到 运行时
-    //assert(false && "Needs Implementation.");
-}
+#include <gcc-plugin.h>
+#include <gimple.h>
+#include <tree.h>
+#include <tree-pass.h>
 
-class PyGccPass : public GCCTraceBase<struct opt_pass*>{
+void ggc_marker(opt_pass*);
+
+class PyGccPass : public GCCTraceBase<opt_pass*>{
 public:
     //struct opt_pass *pass;
+    explicit PyGccPass(opt_pass* v): GCCTraceBase<opt_pass*>(v), passName_(v->name) {};
+public:
+    const std::string &getName() const;
+
+private:
+    std::string passName_;
 };
 
 
+int
+PyGcc_PyGccPass_TypeInit(py::module_& m);
 
 #endif
