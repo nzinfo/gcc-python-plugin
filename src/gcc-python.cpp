@@ -134,38 +134,16 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
     });
 
     m.def("register_callback", &PyGcc_RegisterCallback);
-
-// define event. force cast enum type to int/long.
 #define DEFEVENT(e) \
-       m.attr(#e) = (long)e;
+    .value( #e , e)
 
-    # include "plugin.def"
-    DEFEVENT(PLUGIN_EVENT_FIRST_DYNAMIC)  // give the outer-python side the upper-bound of plugin.
-
+    py::enum_<plugin_event>(m, "EVENT", py::arithmetic(), "GCC Plugin Events")
+            # include "plugin.def"
+            DEFEVENT(PLUGIN_EVENT_FIRST_DYNAMIC);
+    // .export_values();
+    // give the outer-python side the upper-bound of plugin. as PLUGIN_EVENT_FIRST_DYNAMIC
 # undef DEFEVENT
-
-#define DEFPROP(e) \
-       m.attr(#e) = e;
-
-    // PyModule_AddIntMacro(PyGcc_globals.module, PROP_gimple_any);
-    DEFPROP(PROP_gimple_any)
-    DEFPROP(PROP_gimple_lcf)
-    DEFPROP(PROP_gimple_leh)
-    DEFPROP(PROP_cfg)
-
-    DEFPROP(PROP_ssa)
-    DEFPROP(PROP_no_crit_edges)
-    DEFPROP(PROP_rtl)
-    DEFPROP(PROP_gimple_lomp)
-    DEFPROP(PROP_cfglayout)
-    DEFPROP(PROP_gimple_lcx)
-
-    DEFPROP(GCC_VERSION)
-#if (GCC_VERSION >= 4008)
-#else
-    DEFPROP(PROP_referenced_vars)
-#endif
-# undef DEFPROP
+    m.attr("GCC_VERSION") = GCC_VERSION;
 }
 
 static int

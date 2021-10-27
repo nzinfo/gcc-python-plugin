@@ -11,6 +11,7 @@ set( GCC_PYTHON_PLUGIN_SRCS
         gcc-python-passmanager.cpp
         wrapper/gcc-python-ggc-markers.cpp
         wrapper/gcc-python-opt_pass.cpp
+        wrapper/gcc-python-current.cpp
     )
 
 if(WIN32)
@@ -53,7 +54,7 @@ set_tests_properties(pygcc_plugin_arg_2 PROPERTIES
 
 # 检查 regist callback 是否存在
 add_test(NAME pygcc_plugin_arg_3
-        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; gcc.register_callback\(gcc.PLUGIN_FINISH, lambda: print\('hello'\)\)"
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print(dir(gcc), dir(gcc.EVENT)); gcc.register_callback\(gcc.EVENT.PLUGIN_FINISH, lambda: print\('hello'\)\)"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         # COMMENT "Running GCC plugin check..."
         )
@@ -62,7 +63,7 @@ set_tests_properties(pygcc_plugin_arg_3 PROPERTIES
         )
 
 add_test(NAME pygcc_plugin_arg_4
-        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; gcc.register_callback\(gcc.PLUGIN_FINISH, lambda s: print\('hello', s\), 'world'\)"
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; gcc.register_callback\(gcc.EVENT.PLUGIN_FINISH, lambda s: print\('hello', s\), 'world'\)"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         # COMMENT "Running GCC plugin check..."
         )
@@ -71,7 +72,7 @@ set_tests_properties(pygcc_plugin_arg_4 PROPERTIES
         )
 
 add_test(NAME pygcc_plugin_pass_1
-        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; pm = gcc.PassManger(); print\(pm\);"
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; pm = gcc.PassManager(); print\(pm\);"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         # COMMENT "Running GCC plugin check..."
         )
@@ -80,7 +81,7 @@ set_tests_properties(pygcc_plugin_pass_1 PROPERTIES
         )
 
 add_test(NAME pygcc_plugin_pass_2
-        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.passManger\)\); print\(dir\(gcc.passManger\)\);"
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.passManager\)\); print\(dir\(gcc.passManager\)\);"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         # COMMENT "Running GCC plugin check..."
         )
@@ -89,7 +90,7 @@ set_tests_properties(pygcc_plugin_pass_2 PROPERTIES
         )
 
 add_test(NAME pygcc_plugin_pass_enum
-        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.PassManger.PassPosition\)\);"
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.PassManager.PassPosition\)\);"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         # COMMENT "Running GCC plugin check..."
         )
@@ -98,7 +99,7 @@ set_tests_properties(pygcc_plugin_pass_enum PROPERTIES
         )
 
 add_test(NAME pygcc_plugin_pass_register
-        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.PassManger\)\);"
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.PassManager\)\);"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         # COMMENT "Running GCC plugin check..."
         )

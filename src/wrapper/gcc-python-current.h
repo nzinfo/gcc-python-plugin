@@ -37,6 +37,9 @@ public:
 
     // 更新要使用 gcc.current 的 值， 从 gcc 的全局变量
     void Update(enum plugin_event ev);
+
+    // 允许 current_env 在系统退出之前 释放持有的 资源，主要可能是 python 相关的对象。
+    void cleanup() {};
 private:
     /* Current position in real source file.  defaults is UNKNOWN_LOCATION */
     location_t input_location_{};
