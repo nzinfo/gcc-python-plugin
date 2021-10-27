@@ -84,6 +84,7 @@ static const char* event_name[] = {
 #define DEFEVENT(NAME) \
   #NAME, 
 # include "plugin.def"
+  PLUGIN_EVENT_FIRST_DYNAMIC
 # undef DEFEVENT
 };
 
@@ -101,6 +102,7 @@ static void trace_callback_for_##NAME(void *gcc_data, void *user_data) \
 { \
      trace_callback(NAME, gcc_data, user_data); \
 }
+
 # include "plugin.def"
 # undef DEFEVENT
 #endif /* GCC_PYTHON_TRACE_ALL_EVENTS */

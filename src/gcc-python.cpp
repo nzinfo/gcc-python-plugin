@@ -89,7 +89,9 @@ static bool g_FlagPyGcc_Debug;   // 调试信息开关
 const char* event_name[] = {
 #define DEFEVENT(NAME) \
   #NAME,
+
 # include "plugin.def"
+  DEFEVENT(PLUGIN_EVENT_FIRST_DYNAMIC)
 # undef DEFEVENT
 };
 
@@ -136,7 +138,9 @@ PYBIND11_EMBEDDED_MODULE(gcc, m) {
 #define DEFEVENT(e) \
        m.attr(#e) = (long)e;
 
-# include "plugin.def"
+    # include "plugin.def"
+    DEFEVENT(PLUGIN_EVENT_FIRST_DYNAMIC)  // give the outer-python side the upper-bound of plugin.
+
 # undef DEFEVENT
 
 #define DEFPROP(e) \

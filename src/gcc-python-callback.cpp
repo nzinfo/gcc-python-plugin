@@ -28,6 +28,82 @@ extern const char* event_name[];
 extern const char* g_plugin_name;
 
 /*
+  Notes on the passes
+
+  As of 2011-03-30, http://gcc.gnu.org/onlinedocs/gccint/Plugins.html doesn't
+  seem to document the type of the gcc_data passed to each callback.
+
+  For reference, with gcc-4.6.0-0.15.fc15.x86_64 the types seem to be as
+  follows:
+
+  PLUGIN_ATTRIBUTES:
+    gcc_data=0x0
+    Called from: init_attributes () at ../../gcc/attribs.c:187
+    However, it seems at this point to have initialized these:
+      static const struct attribute_spec *attribute_tables[4];
+      static htab_t attribute_hash;
+
+  PLUGIN_PRAGMAS:
+    gcc_data=0x0
+    Called from: c_common_init () at ../../gcc/c-family/c-opts.c:1052
+
+  PLUGIN_START_UNIT:
+    gcc_data=0x0
+    Called from: compile_file () at ../../gcc/toplev.c:573
+
+  PLUGIN_PRE_GENERICIZE
+    gcc_data is:  tree fndecl;
+    Called from: finish_function () at ../../gcc/c-decl.c:8323
+
+  PLUGIN_OVERRIDE_GATE
+    gcc_data:
+      &gate_status
+      bool gate_status;
+    Called from : execute_one_pass (pass=0x1011340) at ../../gcc/passes.c:1520
+
+  PLUGIN_PASS_EXECUTION
+    gcc_data: struct opt_pass *pass
+    Called from: execute_one_pass (pass=0x1011340) at ../../gcc/passes.c:1530
+
+  PLUGIN_ALL_IPA_PASSES_START
+    gcc_data=0x0
+    Called from: ipa_passes () at ../../gcc/cgraphunit.c:1779
+
+  PLUGIN_EARLY_GIMPLE_PASSES_START
+    gcc_data=0x0
+    Called from: execute_ipa_pass_list (pass=0x1011fa0) at ../../gcc/passes.c:1927
+
+  PLUGIN_EARLY_GIMPLE_PASSES_END
+    gcc_data=0x0
+    Called from: execute_ipa_pass_list (pass=0x1011fa0) at ../../gcc/passes.c:1930
+
+  PLUGIN_ALL_IPA_PASSES_END
+    gcc_data=0x0
+    Called from: ipa_passes () at ../../gcc/cgraphunit.c:1821
+
+  PLUGIN_ALL_PASSES_START
+    gcc_data=0x0
+    Called from: tree_rest_of_compilation (fndecl=0x7ffff16b1f00) at ../../gcc/tree-optimize.c:420
+
+  PLUGIN_ALL_PASSES_END
+    gcc_data=0x0
+    Called from: tree_rest_of_compilation (fndecl=0x7ffff16b1f00) at ../../gcc/tree-optimize.c:425
+
+  PLUGIN_FINISH_UNIT
+    gcc_data=0x0
+    Called from: compile_file () at ../../gcc/toplev.c:668
+
+  PLUGIN_FINISH_TYPE
+    gcc_data=tree
+    Called from c_parser_declspecs (parser=0x7fffef559730, specs=0x15296d0, scspec_ok=1 '\001', typespec_ok=1 '\001', start_attr_ok=<optimized out>, la=cla_nonabstract_decl) at ../../gcc/c-parser.c:2111
+
+  PLUGIN_PRAGMA
+    gcc_data=0x0
+    Called from: init_pragma at ../../gcc/c-family/c-pragma.c:1321
+    to  "Allow plugins to register their own pragmas."
+*/
+
+/*
 static void
 PyGcc_CallbackFor_PLUGIN_FINISH(void *gcc_data ATTRIBUTE_UNUSED, void *user_data)
 {
@@ -72,8 +148,9 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
     }
 
     switch ((enum plugin_event)eventEnum) {
-        // TODO: support more event.
+        // TODO: support more event. defined in <plugin.def>
         case PLUGIN_FINISH:
+            // The PLUGIN_FINISH event is the last time that plugins can call GCC functions, notably emit diagnostics with warning, error etc.
             // PLUGIN_FINISH 较为特殊，因为 系统用于清除所有数据的 回调 也使用同样的事件，且注册时机较 后面注册的同样的事件处理回调早
             // 因此，此处的对象会泄露到 PythonVM 析构之后，导致 UAF.
             // 所以，针对 事件类型 PLUGIN_FINISH 并不直接注册到 GCC 系统，而是复用插件主系统注册的那个回调。

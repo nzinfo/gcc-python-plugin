@@ -73,6 +73,9 @@ else()
 endif()
 # get_filename_component(GCC_PLUGINS_DIR ${GCC_PLUGINS_DIR} REALPATH)
 message(STATUS "GCC_PLUGINS_DIR = ${GCC_PLUGINS_DIR}")
+# save to cached
+set(GCC_PLUGINS_DIR "${GCC_PLUGINS_DIR}" CACHE INTERNAL "Directory where gcc plugin headers are located")
+
 
 # force pybin11_newpython mode is on .
 set(PYBIND11_FINDPYTHON 1)
