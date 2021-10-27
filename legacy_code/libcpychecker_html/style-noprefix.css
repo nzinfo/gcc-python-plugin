@@ -1,0 +1,383 @@
+/*  Copyright 2012 Buck Golemon <buck@yelp.com>
+ *  with help from http://jsfiddle.net/simevidas/udyTs/show/light/
+ 
+    This is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+ 
+    This program is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    General Public License for more details.
+ 
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see
+    <http://www.gnu.org/licenses/>.
+*/
+html, body {
+    width: 100%;
+    background: black;
+}
+html {
+    height: 100%;
+}
+body {
+    font: 12px "DejaVu Sans", "Bitstream Vera Sans", "Ubuntu Sans", Helvetica, Arial, sans-serif;
+    color: black;
+    background: #EBEBEB;
+    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+}
+h1, h2 {
+    font-weight: bolder;
+}
+h1 a {
+    text-decoration: none;
+    color: inherit;
+}
+h3 {
+    display: inline-block;
+    font-weight: bold;
+    margin-right: 0.33em;
+}
+h3:after {
+    content: ':';
+}
+hr {
+    border-bottom: 1px solid #CCC; width: 640px;
+}
+img {
+    vertical-align: middle;
+}
+
+
+/* Main page layout */
+#header {
+    background-color: #0099ff;
+}
+#reports {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+
+/* Header */
+#title {
+    display:flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.5em 1em;
+    box-sizing: border-box;
+    color: white;
+    border-bottom: 1px solid #7A7A7A;
+    box-shadow: 0px 0px 2px #000;
+}
+#title h1 {
+    font-size: 1.2em;
+    text-shadow: 0 1px 1px black;
+}
+#title #info {
+    flex: 1;
+    align-items: flex-end;
+    text-shadow: 0 1px 0 black;
+}
+
+/* Navigation */
+#nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.5em 1em;
+    box-sizing: border-box;
+    background-color: #E4E4E4;
+    border-bottom: 1px solid #7A7A7A;
+    box-shadow: 0px 0px 2px #000;
+}
+#report-pagination a {
+    padding: 4px;
+}
+#prev,
+#next {
+    padding: 0.25em 1em;
+    background-color: white;
+    border: 1px solid #ccc;
+    margin-left: 1em;
+}
+
+
+#header-container {
+    border-bottom:1px solid #7A7A7A;
+}
+
+#header ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    position: absolute;
+    top: 35px;
+    right: 0;
+}
+
+#header ul li {
+    float: left;
+    margin-right: 5px;
+}
+
+#header ul li a{
+    color: #90b874;
+    font-weight: bold;
+    font-size: 1.4em;
+    margin-right: 5px;
+    text-decoration: none;
+}
+
+#header ul li a:hover {
+    color: #beffbf;
+}
+
+
+
+
+
+#reports > li {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+#reports > li + li {
+    border-top: 1px dashed hsl(0, 0%, 70%);
+}
+#reports > li header {
+    display: flex;
+    flex-direction: row;
+    padding: .5em;
+    background: white;
+}
+#reports > li header .error {
+    flex: 1;
+    color: darkred;
+    font-weight: bold;
+    text-align: center;
+}
+#reports > li .body {
+    display: flex;
+    flex-direction: row;
+}
+
+
+
+.label {
+    font-size: 12px;
+    font-weight:bolder;
+    margin-left: 2em;
+}
+
+#main {
+    background: red;
+    display: flex;
+}
+
+
+.source {
+    height: 100%;
+    font-size: 12px;
+    background: white;
+    line-height: 1.33;
+    overflow-x: auto;
+    border-right: 1px solid hsl(0, 0%, 70%);
+    flex: 1 0 40em;
+}
+.source table {
+    width: 100%;
+    font-family: monospace;
+}
+
+#code {
+    background: blue;
+    min-width: 300px;
+    flex: 2;
+}
+.source tr:nth-child(2n) {
+    background: hsl(0, 0%, 93%);
+}
+
+#container {
+    width: 1000px;
+    margin: 0 auto;
+    font-size:12px;
+    overflow: auto;
+    padding: 70px 0 0px;
+    background-color:#f8f8f8;
+}
+
+#content {
+    float: left;
+    width: 660px;
+    padding-top:20px;
+    padding-left:20px;
+    padding-right:10px;
+}
+
+#content .source td {
+    font-family: monospace;
+    white-space: pre;
+    min-height: 1em;
+    line-height: 20px;
+}
+
+
+.fnc-report {
+    font-size:12px;
+}
+
+#error-box {
+    font-size:12px;
+    font-color:000;
+    float:left;
+}
+
+#report-count{
+    font-size:12px;
+    float:right;
+}
+
+/* Left column: source code */
+.source tr:hover {
+    background: hsl(210, 30%, 87%);
+}
+.source .lineno {
+    padding-right: 0.5em;
+    text-align: right;
+    user-select: none;
+    color: hsl(0, 0%, 60%);
+    vertical-align: middle;
+}
+.source .code {
+    white-space: pre;
+}
+
+
+/* Right column: list of states */
+.states {
+    font-size: 12px;
+    top: 0.5em;
+    height: 100%;
+    min-width: 25em;
+    border-left: 1px solid hsl(0, 0%, 70%);
+    border-top: 2px solid #B2B2B2
+}
+.states li {
+    position: relative;
+    padding: 0.5em;
+    margin: 1em;
+    background: white;
+    border: 1px solid hsl(0, 0%, 80%);
+}
+.states li.new-subflow {
+    border-top-width: 4px;
+}
+.states h2 {
+    float: right;
+    padding: 0.33em 0.5em;
+    margin: -0.5em -0.5em 0.5em 0.5em;
+    background: hsl(0, 0%, 80%);
+    color: hsl(0, 0%, 30%);
+    border-radius: 0 0 0 0.5em;
+}
+.states p {
+    line-height: 1.5;
+}
+.states p + p {
+    margin-top: 0.5em;
+}
+
+var {
+    color: navy;
+}
+var.leak {
+    color: darkred;
+    font-weight: bold;
+    background: hsl(0, 100%, 90%);
+}
+
+.flow-line {
+    background: hsl(210, 80%, 60%);
+    background-clip: content-box;
+    width: 2px;
+}
+.flow-empty, .flow-line {
+    padding: 0 5px;
+    text-align: center;
+}
+.flow-dot {
+    display: inline-block;
+    background: hsl(210, 80%, 60%);
+    outline: 1px solid rgba(100%, 100%, 100%, 0.5);
+    height: 6px;
+    width: 6px;
+    margin: -2px;
+    border-radius: 100px;
+    outline-radius: 100px;
+    vertical-align: middle;
+}
+
+/* Selection overrides */
+.states li {
+    left: 0;
+    transition-property: left, background-color, border-color;
+}
+.source tr
+.states li h2 {
+    transition-property: background-color;
+}
+td .flow-dot,
+.states li,
+.states li h2 {
+    transition-duration: 0.25s;
+    transition-timing-function: ease-out;
+}
+
+td:hover .flow-dot,
+td.selected .flow-dot {
+    height: 10px;
+    width: 10px;
+    background: hsl(30, 80%, 60%);
+    margin: -5px;
+}
+
+.source tr:hover,
+.source tr.selected {
+    background-color: #ffe181;
+}
+.states li:hover,
+.states li.selected {
+    left: -2em;
+    background-color: #fef8cb;
+    border-color: #ffe181;
+}
+.states li:hover h2,
+.states li.selected h2 {
+    background-color: #ffe181;
+}
+
+#notes {
+    background: yellow;
+    min-width: 200px;
+}
+
+.note {
+    font-weight: bolder;
+}
+.note:first-of-type::before {
+    /* content: url('images/exclamation.png');
+     * to regenerate:
+     *      from libcpychecker_html.make_html import data_uri
+     *      data_uri('image/png', 'images/exclamation.png')
+     */
+    content: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAjBJREFUeNqkk0trE1EUx8/cO49OfGTSRNJMYsA0aVonoYh13YW71uJCKFQhKqibfgFLwYULsR/AhY+VG1d+C124kJiFIGipmoIZNUXtZDKTycz1njGpaRNU8MJv7txzzv/c5xEYY/A/TRQEAW5c5KwM+aKcR73/a5zvg84HT371wv07Apwuj0x+PZW/vArA4NO7x/f4+OGoIHLKAAiC/fBdHadSbCGZPTeTzC7OUElbQNvBOISMMnIqeqFSYs57mTkfZD1/qYS2f0rAZ5pVDmXnY/FSbn3jM6xvfAEtfjKnRDLz6BtK4PPPADi+ms6vGK71lti2DUintUVSJ84b6OvF7GlI4PNMPVgAZ49oxpyqRnXf+wGWZYX4ngWRiKYfPpqfw5hBjej7eweqCkSo6JOLhmd/hI7vQLVaBdM0YXt1FgK2CeJ40fCbmxUWsGc8vh3egtcFQPhyLsQnzpQJcbVmuw5mawtqtRo0Gg3wJQeY7ALIrqZEM2WM7esIPkROAgR5OZEpTTV3X4IXNEGiLnw1b4fItBNCBQuiqeQUA7qMGtSSLt8C38aVRLo47QVvVJFYoFAnJJG8FdIfI6rSVWMTx6ZRg1rS7UKeSspSMj2Wk+AbjPGZ+vTboA1JZbQcEcUl1Iq2zdZyxURBpruUMTzR38Vl79wM+9bO0/3vlwLVs+OF16/MNdFug/vi+Xadm+vDL/3uHyuR16Er4E3gKvEaOTLa/1LBuEQPF8hxfgowAINnMqTBUH7hAAAAAElFTkSuQmCC');
+    padding: 5px;
+}

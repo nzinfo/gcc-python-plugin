@@ -72,6 +72,7 @@ PyGcc_RegisterCallback(long eventEnum, py::function callback_fn, py::args extra_
     }
 
     switch ((enum plugin_event)eventEnum) {
+        // TODO: support more event.
         case PLUGIN_FINISH:
             // PLUGIN_FINISH 较为特殊，因为 系统用于清除所有数据的 回调 也使用同样的事件，且注册时机较 后面注册的同样的事件处理回调早
             // 因此，此处的对象会泄露到 PythonVM 析构之后，导致 UAF.

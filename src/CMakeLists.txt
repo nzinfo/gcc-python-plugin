@@ -8,6 +8,7 @@ set( GCC_PYTHON_PLUGIN_SRCS
         python-ggc-wrapper.cpp
         gcc-python-closure.cpp
         gcc-python-callback.cpp
+        gcc-python-passmanager.cpp
     )
 
 if(WIN32)
@@ -65,4 +66,40 @@ add_test(NAME pygcc_plugin_arg_4
         )
 set_tests_properties(pygcc_plugin_arg_4 PROPERTIES
         PASS_REGULAR_EXPRESSION "hello world"
+        )
+
+add_test(NAME pygcc_plugin_pass_1
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; pm = gcc.PassManger(); print\(pm\);"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_pass_1 PROPERTIES
+        PASS_REGULAR_EXPRESSION "No constructor defined!"
+        )
+
+add_test(NAME pygcc_plugin_pass_2
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.passManger\)\); print\(dir\(gcc.passManger\)\);"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_pass_2 PROPERTIES
+        PASS_REGULAR_EXPRESSION "__self__"
+        )
+
+add_test(NAME pygcc_plugin_pass_enum
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.PassManger.PassPosition\)\);"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_pass_enum PROPERTIES
+        PASS_REGULAR_EXPRESSION "REPLACE"
+        )
+
+add_test(NAME pygcc_plugin_pass_register
+        COMMAND g++ -fplugin=$<TARGET_FILE:${PLUGIN_NAME}> ${CMAKE_SOURCE_DIR}/tests/stubs/dummy.c "-fplugin-arg-pygcc-command=import gcc; print\(dir\(gcc.PassManger\)\);"
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        # COMMENT "Running GCC plugin check..."
+        )
+set_tests_properties(pygcc_plugin_pass_register PROPERTIES
+        PASS_REGULAR_EXPRESSION "register_pass"
         )

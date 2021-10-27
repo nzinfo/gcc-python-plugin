@@ -319,9 +319,52 @@ on_plugin_finish(void *gcc_data, void *user_data ATTRIBUTE_UNUSED)
 }
 
 // gcc plugin required initialize api.
+#if 0       // link test failed on Linux.
 extern int
 plugin_init (struct plugin_name_args *plugin_info,
              struct plugin_gcc_version *version) __attribute__((nonnull));
+
+class PyGccGimplePass;
+#if (GCC_VERSION >= 4009)
+/*
+  GCC 4.9 converted passes to a C++ class hierarchy, with methods for gate
+  and execute.
+*/
+
+static bool impl_gate(function *fun) {
+    return true;
+}
+
+static unsigned int impl_execute(function *fun) {
+    return 0;
+}
+
+#if (GCC_VERSION >= 5000)
+/* GCC 5 added a "fun" param to the "gate" and "execute" vfuncs of
+   pass opt_pass.  */
+# define PASS_DECLARE_GATE_AND_EXECUTE                                  \
+    bool gate (function *fun) { return impl_gate(fun); }                \
+    unsigned int execute (function *fun) { return impl_execute(fun); }
+#else
+/* ...whereas in GCC 4.9 they took no params, with cfun being implied.  */
+# define PASS_DECLARE_GATE_AND_EXECUTE                            \
+    bool gate () { return impl_gate(cfun); }                      \
+    unsigned int execute () { return impl_execute(cfun); }
+#endif /* #if (GCC_VERSION >= 5000) */
+
+class PyGccGimplePass : public gimple_opt_pass
+{
+public:
+    PyGccGimplePass(const pass_data& data, gcc::context *ctxt) :
+            gimple_opt_pass(data, ctxt)
+    {
+    }
+
+    PASS_DECLARE_GATE_AND_EXECUTE
+    opt_pass *clone() {return this; }
+};
+#endif
+#endif // end test of link fno-rtti
 
 PLUGIN_API_TYPEDEF  int
 plugin_init (struct plugin_name_args *plugin_info,
@@ -385,7 +428,16 @@ plugin_init (struct plugin_name_args *plugin_info,
         // 初始化 python-ggc 集成的接口。
         PyGcc_ggc_init();
 
+        // 初始化 pass_manger
+        PyGcc_pass_manager_init(module_gcc);
+
         // do some typeinfo init here...
+        /*
+        {
+            pass_data data;
+            PyGccGimplePass* pass = new PyGccGimplePass(data, NULL);
+        }
+        */
 
         // execute user_script.
         PyGcc_run_any_command(module_gcc);
@@ -469,6 +521,7 @@ plugin_init (struct plugin_name_args *plugin_info,
 
     return 0;
 }
+
 
 #if 0
 #define OS_WIN32 1

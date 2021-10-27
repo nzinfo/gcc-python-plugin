@@ -39,7 +39,7 @@ public:
 extern GCCTraceRoot g_Sentinel;
 
 template<typename GCC_T>
-void ggc_marker(GCC_T obj) {
+void ggc_marker(GCC_T) {
     // 推迟到 运行时
     assert(false && "Needs Implementation.");
 }
@@ -73,7 +73,7 @@ public:
     }
 
     void ggc_marker() override {
-        ggc_marker(value_);
+        ::ggc_marker(value_);
     }
 protected:
     GCC_T value_;
@@ -108,5 +108,14 @@ PyGcc_ProcessCallback_PLUGIN_FINISH(void *gcc_data);
 
 /* gcc-python-closure.cpp */
 void clear_callback_closures();
+
+// Pass Manager
+
+/* gcc-python-pass-manager.cpp */
+int
+PyGcc_pass_manager_init(py::module_& m);
+
+void
+PyGcc_pass_manager_cleanup();
 
 #endif //GCC_PYTHON_PLUGIN_GGC_WRAPPER_H
